@@ -1,8 +1,9 @@
 
 <?php
-			require 'partials/security.php';
-
-		require 'partials/header.php';
+	require 'partials/security.php';
+	require 'partials/header.php';
+		require 'model/Database.php';
+  
 ?>
 <div class="container">
 		<!-- Outer Row -->
@@ -19,7 +20,7 @@
 										<div class="col-lg-8 p-3 p-lg-0">
 											<div class="p-5">
 												<div class="text-center">
-													<h1 class="h4 text-gray-900 mb-4"><strong>USER LOGIN</strong></h1>
+													<h1 class="h4 text-gray-900 mb-4"><strong><?= $storeName. ' ' ?>USER LOGIN</strong></h1>
 													<img src="../img/ansar.png" alt="" style="width: 30%;">
 												</div>
 												<form id="loginForm">

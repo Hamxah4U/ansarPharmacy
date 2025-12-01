@@ -42,7 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $stmt->bindParam(':id', $userID);     
       $result = $stmt->execute();
       if($result){
-        $success['message'] = 'Record updated!';
+        // $success['message'] = 'Record updated!';
+        echo json_encode([
+        'status' => true,
+        'success' => ['message' => 'User successfully updated.']
+        ]);
+        exit;
       }
     }
 
@@ -50,11 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       echo json_encode([
         'status' => false,
         'errors' => $errors
-      ]);
-    }else{
-      echo json_encode([
-        'status' => true,
-        'message' => $success
       ]);
     }
 

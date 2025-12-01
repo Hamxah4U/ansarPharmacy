@@ -3,7 +3,17 @@
 	<button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
 			<i class="fa fa-bars"></i>
 	</button>
+	<?php
+		$stmt = $db->conn->prepare("SELECT SUM(COALESCE(`Quantity` * `Pprice`)) AS `current_capital` FROM `supply_tbl` GROUP BY `Department`, `ProductName`, `ExpiryDate`,`SupplyDate`");
+		$stmt->execute();
+		$capitals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+		$totalCapital = 0;
+		foreach($capitals as $index => $capital){
+			$totalCapital += $capital['current_capital'];
+		}
+	?>
+	<button type="button" class="btn btn-primary"><strong><?= $storeName.' ' ?>=>&nbsp; CURRENT CAPITAL <strong class="text-warning"><?= '&#8358;'.number_format($totalCapital, 2, '.', ',') ?></strong> </strong></button>
 	<!-- Topbar Navbar -->
 	<ul class="navbar-nav ml-auto">
 			<li class="nav-item dropdown no-arrow d-sm-none">

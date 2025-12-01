@@ -1,9 +1,10 @@
 <?php
 	require 'partials/security.php';
-	require 'partials/header.php';
+  require 'partials/header.php';
+	// require 'model/Database.php';
 	require 'classes/Users.class.php';
 ?>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> -->
     <!-- Page Wrapper -->
 <div id="wrapper">
     <!-- Sidebar -->
@@ -151,172 +152,87 @@
 
 <script>
 
-function resetForm() {
-    $('#userForm')[0].reset();
-    $('#errorFname, #errorEmail, #errorPhone, #errorUnit, #errorRole').text('');
-    $('#role, #unit').val('--choose--');
-    $('#action-btn').removeClass('btn-info').addClass('btn-primary').text('Save').data('mode', 'add');
-}
+	function resetForm() {
+			$('#userForm')[0].reset();
+			$('#errorFname, #errorEmail, #errorPhone, #errorUnit, #errorRole').text('');
+			$('#role, #unit').val('--choose--');
+			$('#action-btn').removeClass('btn-info').addClass('btn-primary').text('Save').data('mode', 'add');
+	}
 
-$(document).ready(function () {
-    $('#userForm').on('submit', function (e) {
-        e.preventDefault();
-        const mode = $('#action-btn').data('mode');
-        const url = mode === 'edit' ? 'model/user.update.php' : 'model/user.form.php';
-        const iconType = mode === 'edit' ? 'info' : 'success';
+	$(document).ready(function () {
+			$('#userForm').on('submit', function (e) {
+					e.preventDefault();
+					const mode = $('#action-btn').data('mode');
+					const url = mode === 'edit' ? 'model/user.update.php' : 'model/user.form.php';
+					const iconType = mode === 'edit' ? 'info' : 'success';
 
-        $.ajax({
-            url: url,
-            dataType: 'JSON',
-            data: $(this).serialize(),
-            type: 'POST',
-            success: function (response) {
-                if (response.status === false) {
-                    $('#errorFname').text(response.errors.fname || '');
-                    $('#errorEmail').text(response.errors.email || response.errors.emailExist || '');
-                    $('#errorPhone').text(response.errors.phone || response.errors.phoneExist || '');
-                    $('#errorUnit').text(response.errors.unit || '');
-                    $('#errorRole').text(response.errors.role || '');
-                } else {
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: "top-end",
-                        showConfirmButton: false,
-                        timer: 1000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.onmouseenter = Swal.stopTimer;
-                            toast.onmouseleave = Swal.resumeTimer;
-                        }
-                    });
-                    Toast.fire({
-                        icon: iconType,
-                        title: response.success.message
-                    });
+					$.ajax({
+							url: url,
+							dataType: 'JSON',
+							data: $(this).serialize(),
+							type: 'POST',
+							success: function (response) {
+									if (response.status === false) {
+											$('#errorFname').text(response.errors.fname || '');
+											$('#errorEmail').text(response.errors.email || response.errors.emailExist || '');
+											$('#errorPhone').text(response.errors.phone || response.errors.phoneExist || '');
+											$('#errorUnit').text(response.errors.unit || '');
+											$('#errorRole').text(response.errors.role || '');
+									} else {
+											const Toast = Swal.mixin({
+													toast: true,
+													position: "top-end",
+													showConfirmButton: false,
+													timer: 2000,
+													timerProgressBar: true,
+													didOpen: (toast) => {
+															toast.onmouseenter = Swal.stopTimer;
+															toast.onmouseleave = Swal.resumeTimer;
+													}
+											});
+											Toast.fire({
+													icon: iconType,
+													title: response.success.message
+											});
 
-                    
-                    $('#usersTable').DataTable().ajax.reload();
-                    resetForm();
-                    $('#modalUser').modal('hide');
-                }
-            },
-            error: function (xhr, status, error) {
-                alert('Error: ' + xhr.status + ' - ' + error);
-            }
-        });
-    });
-
-    $('body').on('click', '#editUser', function (e) {
-        e.preventDefault();
-        let id = $(this).data('id');
-        $.ajax({
-            url: `model/user.edit.php?UID=${id}`,
-            type: 'GET',
-            dataType: 'JSON',
-            success: function (response) {
-                $('#userID').val(response.userID);
-                $('#fname').val(response.Fullname);
-                $('#email').val(response.Email);
-                $('#phone').val(response.Phone);
-                $('#unit').val(response.Department);
-                $('#role').val(response.Role);
-                $('#action-btn').removeClass('btn-primary').addClass('btn-info').text('Update').data('mode', 'edit');
-                $('#modalUser').modal('show');
-            },
-            error: function (xhr, status, error) {
-                alert('Error');
-            }
-        });
-    });
-
-    $('#modalUser').on('hidden.bs.modal', function () {
-        resetForm();
-    });
-});
-
-
-/* 
-function resetForm() {
-	$('#userForm')[0].reset();
-	$('#errorFname, #errorEmail, #errorPhone, #errorUnit, #errorRole').text('');
-	$('#role, #unit').val('--choose--');
-	$('#action-btn').removeClass('btn-info').addClass('btn-primary').text('Save').data('mode', 'add');
-}
-
-	$(document).ready(function(){
-    $('#userForm').on('submit', function(e){
-			e.preventDefault();
-			const mode = $('#action-btn').data('mode');
-      const url = mode === 'edit' ? 'model/user.update.php' : 'model/user.form.php';
-      const iconType = mode === 'edit' ? 'info' : 'success';
-			$.ajax({
-				url: url,//'model/user.form.php',
-				dataType: 'JSON',
-				data: $(this).serialize(),
-				type: 'POST',
-				success: function(response){
-					if(response.status === false){
-						$('#errorFname').text(response.errors.fname || '');
-						$('#errorEmail').text(response.errors.email || '');
-						$('#errorPhone').text(response.errors.phone || '');
-						$('#errorUnit').text(response.errors.unit || '');
-						$('#errorRole').text(response.errors.role || '');
-						$('#errorEmail').text(response.errors.email || response.errors.emailExist || ''); 
-						$('#errorPhone').text(response.errors.phone || response.errors.phoneExist || '');
-					}else{
-						const Toast = Swal.mixin({
-							toast: true,
-							position: "top-end",
-							showConfirmButton: false,
-							timer: 2000,
-							timerProgressBar: true,
-							didOpen: (toast) => {
-								toast.onmouseenter = Swal.stopTimer;
-								toast.onmouseleave = Swal.resumeTimer;
+											$('#usersTable').DataTable().ajax.reload();
+											$('#modalUser').modal('hide');
+											resetForm();
+									}
+							},
+							error: function (xhr, status, error) {
+									alert('Error: ' + xhr.status + ' - ' + error);
 							}
-							});
-							Toast.fire({
-							icon: iconType,//"success",
-							title: response.success.message//"Signed in successfully"
-						});
-						$('#usersTable').DataTable().ajax.reload();
-						$('#errorFname, #errorEmail, #errorPhone, #errorUnit, #errorRole, #errorEmail,  #errorPhone, #modalUser').text('');
-						$('#modalUser').modal('hide');
-						$('#userForm')[0].reset();
-					}
-				},
-					error: function(xhr, status, error){
-						alert('Error: ' + xhr.status + ' - ' + error);
-					}
-			});
-    });
-
-		$('body').on('click', '#editUser', function(e){
-      e.preventDefault();
-      let id = $(this).data('id');
-      $.ajax({
-        url: `model/user.edit.php?UID=${id}`,
-        type: 'GET',
-        dataType: 'JSON',
-        success: function(response){
-					$('#userID').val(response.userID);
-					$('#fname').val(response.Fullname);
-					$('#email').val(response.Email);
-					$('#phone').val(response.Phone);
-					$('#unit').val(response.Department);
-					$('#role').val(response.Role);
-					$('#action-btn').removeClass('btn-primary').addClass('btn-info').text('Update').data('mode', 'edit');
-					$('#modalUser').modal('show');
-					$('#modalUser').on('hidden.bs.modal', function(){
-						resetForm();
 					});
-        },
-        error: function(xhr, status, error){
-          alert('Error');
-        }
-      });
-    });
+			});
 
-}); */
+			$('body').on('click', '#editUser', function (e) {
+					e.preventDefault();
+					let id = $(this).data('id');
+					$.ajax({
+							url: `model/user.edit.php?UID=${id}`,
+							type: 'GET',
+							dataType: 'JSON',
+							success: function (response) {
+									$('#userID').val(response.userID);
+									$('#fname').val(response.Fullname);
+									$('#email').val(response.Email);
+									$('#phone').val(response.Phone);
+									$('#unit').val(response.Department);
+									$('#role').val(response.Role);
+									$('#action-btn').removeClass('btn-primary').addClass('btn-info').text('Update').data('mode', 'edit');
+									$('#modalUser').modal('show');
+							},
+							error: function (xhr, status, error) {
+									alert('Error');
+							}
+					});
+			});
+
+			$('#modalUser').on('hidden.bs.modal', function () {
+					resetForm();
+			});
+	});
+
 </script>
 

@@ -122,9 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $errors['emailError'] = 'Email could not be sent. Error: ' . $mail->ErrorInfo;
         }
     }
-      // if($result){
-      //   $success['success'] = 'User successfully added';
-      // }
+      if($result){
+        echo json_encode([
+        'status' => true,
+        'success' => ['message' => 'User successfully added and email sent.']
+        ]);
+        exit;
+      }
     }catch(PDOException $e){
       die('Error:'. $e->getMessage());
     }
@@ -138,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   } else {
       echo json_encode([
         'status' => true,
-        'success' => $success,
+        'success' => ['message' => 'User successfully added']
       ]);
   }
 }
