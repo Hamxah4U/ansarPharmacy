@@ -2,7 +2,6 @@
 		require 'partials/security.php';
     require 'partials/header.php';
 		require 'model/Database.php';
-
 ?>
 
     <!-- Page Wrapper -->
@@ -76,7 +75,7 @@
 						<select name="unit" class="form-control" id="unitID">
 							<option value="--choose--">--choose--</option>
 							<?php
-									require 'model/Database.php';
+									// require 'model/Database.php';
 									$stmt = $db->query('SELECT * FROM `department_tbl`');
 									$units = $stmt->fetchAll(PDO::FETCH_ASSOC);
 									foreach($units as $unit): ?>
@@ -132,7 +131,7 @@
 		},
 		columns: [
 			{ "data": null, render: (data, type, row, meta) => meta.row + 1 },
-    //   { "data": "newdpt" },
+      // { "data": "newdpt" },
 			{ "data": "ProductName" },
 			{ "data": "Quantity"},
 			{ "data": "SupplyDate" },

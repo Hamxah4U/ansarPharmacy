@@ -13,7 +13,14 @@
 			$totalCapital += $capital['current_capital'];
 		}
 	?>
-	<button type="button" class="btn btn-primary"><strong><?= $storeName.' ' ?>=>&nbsp; CURRENT CAPITAL <strong class="text-warning"><?= '&#8358;'.number_format($totalCapital, 2, '.', ',') ?></strong> </strong></button>
+
+	<!-- <?php //if($_SESSION['role'] == 'Admin'):?>  
+		<button type="button" class="btn btn-primary"><strong><?php // $storeName.' ' ?>=>&nbsp; CURRENT CAPITAL <strong class="text-warning"><?= '&#8358;'.number_format($totalCapital, 2, '.', ',') ?></strong> </strong></button>
+		<?php // else:?>
+
+    <strong><?php //$storeName ?></strong>
+
+	<?php // endif; ?> -->
 	<!-- Topbar Navbar -->
 	<ul class="navbar-nav ml-auto">
 			<li class="nav-item dropdown no-arrow d-sm-none">
@@ -62,14 +69,23 @@
 					<!-- Dropdown - User Information -->
 					<div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
 							aria-labelledby="userDropdown">
+
 							<a class="dropdown-item" href="/updateprofile">
 									<i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
 									Profile
 							</a>
+
 							<a class="dropdown-item" href="/changepassword">
 									<i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
 									Settings
 							</a>
+
+							<a class="dropdown-item" href="/currentcapital">
+									
+									<i class="fas fa-money-bill-wave fa-sm fa-fw mr-2 text-gray-400"></i>
+									Current Capital
+							</a>
+
 							<div class="dropdown-divider"></div>
 							<a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Logout</a>
 					</div>

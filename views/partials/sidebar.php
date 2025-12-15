@@ -96,11 +96,11 @@
                     <strong>Manage Supply</strong></a>
                 </li>
 
-                <li class="nav-item active">
+                <!-- <li class="nav-item active">
                     <a class="nav-link" href="/inventoryreport">
                     <i class="fas fa-search"></i>
                     <strong>Inventory Report</strong></a>
-                </li>
+                </li> -->
 
                 <li class="nav-item active">
                     <a class="nav-link" href="report">

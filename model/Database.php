@@ -33,4 +33,5 @@
     $subhead = 'GLOBAL SERVICE LTD';
     $state = 'Address: 83/19 Mango Street Jos Plateau State.';
     $phone = '07051383610';
+    
 ?>

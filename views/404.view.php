@@ -1,6 +1,6 @@
     
     <?php
-		require 'partials/security.php';
+	require 'partials/security.php';
     require 'partials/header.php';
     require 'model/Database.php';
 

@@ -2,7 +2,7 @@
 session_start();
 $uri = parse_url($_SERVER['REQUEST_URI'])['path'];
 
-if(!isset($_SESSION['userID']) && $uri != '/' && $uri != '/login' && $uri != '/resetpassword') {
+if(!isset($_SESSION['userID']) && $uri != '/' && $uri != '/login' && $uri != '/resetpassword' && $uri != '/currentcapital') {
   header('Location: /');
   exit();
 }
@@ -28,7 +28,8 @@ $routes = [
   '/paycredit' => 'controllers/paycredit.php',
   '/sellerreportsummery' => 'controllers/sellerreportsummery.php',
   '/resetpassword' => 'controllers/resetpassword.php',
-  '/servicebilling' => 'controllers/servicebilling.php'
+  '/servicebilling' => 'controllers/servicebilling.php',
+  '/currentcapital' => 'controllers/currentcapital.php',
 ];
 
 if(array_key_exists($uri, $routes)) {
