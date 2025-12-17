@@ -78,11 +78,11 @@
                 </li>
 
 
-                <!-- <li class="nav-item active">
+                <li class="nav-item active">
                     <a class="nav-link" href="/unit">
                     <i class="fas fa-boxes"></i>
                     <strong>Manage Store</strong></a>
-                </li> -->
+                </li>
 
                 <!-- <li class="nav-item active">
                     <a class="nav-link" href="/product">

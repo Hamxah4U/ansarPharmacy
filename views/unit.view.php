@@ -39,6 +39,7 @@
 											<th>#</th>
 											<th>Department</th>
 											<th>Status</th>
+											<th>View Store</th>
 											<th>RecordedBy</th>
 											<th>Action</th>
                     </tr>
@@ -96,7 +97,20 @@
 				{ "data": null, render: (data, type, row, meta) => meta.row + 1 },
 				{ "data": "Department" },
         { "data": "Status" },
-        { "data": "registerby" },
+        
+				{
+					"data": null,
+					"render": function (data, type, row) {
+						return `
+							<a href="/view-store?id=${row.deptID}" class="btn btn-info">
+								<span class="fas fa-fw fa-eye"></span>
+							</a>
+						`;
+					}
+				},
+
+				{ "data": "registerby" },
+
 				{ "data": null,
 					"render": function(data, type, row){
 						return `<button class="btn btn-info" data-id="${row.deptID}" id='editDepartment'><span class="fas fa-fw fa-edit"></span></button>`;
