@@ -41,6 +41,7 @@
         // });
     </script>
 
-</body>
+    <script src="js/chart.js"></script>
 
+</body>
 </html>

@@ -48,9 +48,9 @@
 
 			<!-- Nav Item - Messages -->
 			<li class="nav-item dropdown no-arrow mx-1">
-					<a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button"
-							data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							<i class="fas fa-envelope fa-fw"></i>
+					<a class="nav-link dropdown-toggle" href="/diary" id="messagesDropdown" role="button"
+							data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Diary">
+							<i class="fas fa-envelope fa-fw" style="font-size: larger;"></i>
 							<!-- Counter - Messages -->
 							<span class="badge badge-danger badge-counter"><!-- 7 --></span>
 					</a>
@@ -87,7 +87,7 @@
 							</a>
 
 							<div class="dropdown-divider"></div>
-							<a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Logout</a>
+							<a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-danger"></i><strong class="text-danger">Logout</strong></a>
 					</div>
 			</li>
 	</ul>

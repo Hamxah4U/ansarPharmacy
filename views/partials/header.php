@@ -41,6 +41,33 @@
 <script src="../../css/select2.min.js"></script>
 <link rel="stylesheet" href="../../css/select2-bootstrap4.min.css">
 
+<script src="../../css/ckeditor.js"></script>
+
+<style>
+    .ck-editor__editable {
+        min-height: 300px; /* rows="10" */
+    }
+
+    .diary-content p {
+        margin-bottom: 6px;
+    }
+
+    .diary-content {
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    #yearSelector {
+    width: auto;
+    min-width: 120px;
+    cursor: pointer;
+	}
+
+    .container-fluid{
+        max-height: 200px;
+    }
+</style>
+
 
 </head>
 <body id="page-top">

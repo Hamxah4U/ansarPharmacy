@@ -37,14 +37,14 @@
 
                 <li class="nav-item active">
                     <a class="nav-link" href="/billing">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                       <strong>Retails</strong></a>
+                        <i class="fas fa-shopping-cart"></i>
+                       <strong>Retail Sales</strong></a>
                 </li>
 
                 <li class="nav-item active">
                     <a class="nav-link" href="/servicebilling">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                       <strong>Wholesales</strong></a>
+                        <i class="fas fa-warehouse"></i>
+                       <strong>Wholesale Sales</strong></a>
                 </li>
 
 
@@ -72,7 +72,7 @@
 
                 <li class="nav-item active">
                     <a class="nav-link" href="/finance">
-                        <i class="fas fa-coins"></i>
+                        <i class="fas fa-wallet me-2"></i>
                          <strong>Expenses</strong>
                     </a>
                 </li>
@@ -96,17 +96,30 @@
                     <strong>Manage Supply</strong></a>
                 </li>
 
-                <!-- <li class="nav-item active">
+                <li class="nav-item active">
                     <a class="nav-link" href="/inventoryreport">
                     <i class="fas fa-search"></i>
                     <strong>Inventory Report</strong></a>
-                </li> -->
+                </li>
+
+                
 
                 <li class="nav-item active">
                     <a class="nav-link" href="report">
-                    <i class="fas fa-chart-pie"></i>
-                    <strong>Sales Statement</strong></a>
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <strong>Sales Reports</strong>
+                    </a>
                 </li>
+
+
+                <li class="nav-item active">
+                    <a class="nav-link" href="/chart">
+                        <i class="fas fa-chart-line"></i>
+                        <strong>Sales Analytics</strong>
+                    </a>
+                </li>
+
+
             <?php else: ?>
                 <li class="nav-item active">
                     <a class="nav-link" href="/billing">
@@ -157,8 +170,9 @@
             <hr class="sidebar-divider my-0">
             <li class="nav-item active">
                 <a class="nav-link" href="/logout">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout</a>
+                    <i class="fas fa-sign-out-alt text-danger"></i>
+                    <strong class="text-danger">Logout</strong>
+                </a>
             </li>
 
 

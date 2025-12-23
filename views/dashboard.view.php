@@ -739,7 +739,7 @@ $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
         </div>
         <!-- End of Main Content -->
 <?php
-    require 'partials/footer.php';
+    // require 'partials/footer.php';
 ?>
 
 

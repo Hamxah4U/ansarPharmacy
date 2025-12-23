@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
                       <div class="footer">
                           <!-- <hr /> -->
                           <p style="margin: 0;">Printed By: <?= $_SESSION['fname']?>&nbsp; |&nbsp; Date: <?= date('d-M-Y h:i:s') ?></p>
-                          <p style="margin: 0;">Powered by: Tikvaah Tech</p>
+                          <p style="margin: 0;">Powered by: Tikvaah Tech Solutions</p>
                       </div>
                   </td>
                 </tr>

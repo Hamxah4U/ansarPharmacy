@@ -2,7 +2,16 @@
 session_start();
 $uri = parse_url($_SERVER['REQUEST_URI'])['path'];
 
-if(!isset($_SESSION['userID']) && $uri != '/' && $uri != '/login' && $uri != '/resetpassword' && $uri != '/currentcapital' && $uri != '/view-store') {
+if(!isset($_SESSION['userID']) && 
+  $uri != '/' && 
+  $uri != '/login' && 
+  $uri != '/resetpassword' && 
+  $uri != '/currentcapital' && 
+  $uri != '/view-store' &&
+  $uri != '/chart' && 
+  $uri != '/diary'
+  
+  ) {
   header('Location: /');
   exit();
 }
@@ -31,6 +40,8 @@ $routes = [
   '/servicebilling' => 'controllers/servicebilling.php',
   '/currentcapital' => 'controllers/currentcapital.php',
   '/view-store' => 'controllers/viewstore.php',
+  '/chart' => 'controllers/chart.php',
+  '/diary' => 'controllers/diary.php',
 ];
 
 if(array_key_exists($uri, $routes)) {
