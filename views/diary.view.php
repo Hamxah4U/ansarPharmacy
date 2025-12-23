@@ -71,41 +71,40 @@
         <!-- End of Main Content -->
 
 <!-- Modal -->
-<div class="modal fade" id="modelUnit" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title text-primary"><strong>My Diary Note</strong></h5>
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						<span aria-hidden="true" class="text-danger">&times;</span>
-					</button>
-			</div>
-			<div class="modal-body">
-				<form id="formUnit">
-					<input type="hidden" id="unitId" name="unitId">
-
-          <div class="form-group">
-							<label for="Subject">Subject/Topic</label>
-							<input class="form-control" id="SubjectName" type="text" name="Subject" placeholder="Enter Subject/Topic">
-              <small class="text-danger" id="errorSubject"></small>
-					</div>
-
-					<div class="form-group">
+<div class="modal fade" id="modelUnit" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-primary"><strong>My Diary Note</strong></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formUnit">
+                    <input type="hidden" id="unitId" name="unitId">
+                    <div class="form-group">
+                        <label for="Subject">Subject/Topic</label>
+                        <input class="form-control" id="SubjectName" type="text" name="Subject" placeholder="Enter Subject/Topic">
+                        <small class="text-danger" id="errorSubject"></small>
+                    </div>
+                    <div class="form-group">
                         <label for="Message">Notes</label>
-                        <textarea name="message" id="message" class="form-control"></textarea>
+                        <textarea name="message" id="message_" class="form-control" rows="10"></textarea>
                         <small class="text-danger" id="errorMessage"></small>
-					</div>
-      
-					<button type="submit" class="btn btn-primary" id="action-btn" data-mode="add">Save</button>
-				</form>
-			</div>
-		</div>
-	</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="action-btn">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+
 
 <?php
     require 'partials/footer.php';
 ?>
+
 
 <script>
     ClassicEditor
@@ -169,9 +168,12 @@ $(document).ready(function () {
                         title: response.success.message
                     });
 
+                    setTimeout(function(){
+                        location.reload();
+                    }, 2500);
+
                     $('#modelUnit').modal('hide');
                     resetForm();
-
                 } else {
                     // ✅ SHOW ERRORS CORRECTLY
                     if (response.errors.Subject) {
