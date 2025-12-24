@@ -1,11 +1,5 @@
 <!-- Footer -->
-<footer class="sticky-footer bg-white">
-                <div class="container my-auto">
-                    <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Tikvaah Tech Solutions <?= date('Y') ?></span>
-                    </div>
-                </div>
-            </footer>
+
             <!-- End of Footer -->
 
         </div>
@@ -42,6 +36,14 @@
     </script>
 
     <script src="js/chart.js"></script>
+
+    <footer class="sticky-footer bg-white">
+    <div class="container my-auto">
+        <div class="copyright text-center my-auto">
+            <span>Copyright &copy; Tikvaah Tech Solutions <?= date('Y') ?></span>
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

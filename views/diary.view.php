@@ -41,6 +41,7 @@
                                 <th>Notes</th>
                                 <th>Date write</th>
                                 <th>Time write</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -58,10 +59,18 @@
                                     <td class="diary-content"><?= $note['message'] ?></td>
                                     <td><?= htmlspecialchars($note['datercorded'])  ?></td>
                                     <td><?= htmlspecialchars($note['timerecorded']) ?></td>
+                                    <td>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-info btn-sm editBtn"
+                                            data-id="<?= $note['id'] ?>">
+                                            Edit
+                                        </button>
+                                    </td>
                               <?php endforeach ?>
                         </tbody>
                     </table>
-								</div>
+				</div>
                 <!-- Content Row -->
 
             </div>
@@ -107,16 +116,18 @@
 
 
 <script>
-    ClassicEditor
-        .create(document.querySelector('#message'), {
-            height: 300
-        })
-        .then(editor => {
-            editor.ui.view.editable.element.style.minHeight = '300px';
-        })
-        .catch(error => {
-            console.error(error);
-        });
+    let diaryTable;
+
+$(document).ready(function () {
+
+    diaryTable = $('#diaryTable').DataTable({
+        pageLength: 20,
+        ordering: true,
+        order: [[3, 'desc'], [4, 'desc']], // date + time
+        responsive: true
+    });
+
+});
 </script>
 
 
@@ -151,9 +162,11 @@ $(document).ready(function () {
             dataType: 'JSON',
             data: $(this).serialize(),
 
-            success: function (response) {
+           success: function (response) {
 
                 if (response.status) {
+
+                    let isUpdate = $('#unitId').val() !== '';
 
                     const Toast = Swal.mixin({
                         toast: true,
@@ -164,18 +177,18 @@ $(document).ready(function () {
                     });
 
                     Toast.fire({
-                        icon: "success",
+                        icon: isUpdate ? "info" : "success",
                         title: response.success.message
                     });
 
-                    setTimeout(function(){
+                    setTimeout(function () {
                         location.reload();
                     }, 2500);
 
                     $('#modelUnit').modal('hide');
                     resetForm();
                 } else {
-                    // ✅ SHOW ERRORS CORRECTLY
+
                     if (response.errors.Subject) {
                         $('#errorSubject').text(response.errors.Subject);
                     }
@@ -193,4 +206,35 @@ $(document).ready(function () {
     });
 
 });
+
+$(document).on('click', '.editBtn', function () {
+
+    let id = $(this).data('id');
+
+    $.ajax({
+        url: 'model/diary.fetch.php',
+        type: 'POST',
+        dataType: 'JSON',
+        data: { id: id },
+
+        success: function (response) {
+            if (response.status) {
+
+                $('#unitId').val(response.data.id);
+                $('#SubjectName').val(response.data.subject);
+                $('#message_').val(response.data.message);
+
+                // ✅ Change button text & color
+                $('#action-btn')
+                    .text('Update')
+                    .removeClass('btn-primary')
+                    .addClass('btn-info');
+
+                $('#modelUnit').modal('show');
+            }
+        }
+    });
+});
+
+
 </script>

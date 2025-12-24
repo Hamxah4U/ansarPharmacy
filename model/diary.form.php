@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$errors  = [];
-$success = [];
+$errors = [];
 
 // Sanitize inputs
+$id      = $_POST['unitId'] ?? '';   // 👈 important for edit
 $subject = trim($_POST['Subject'] ?? '');
 $message = trim($_POST['message'] ?? '');
 
@@ -29,7 +29,7 @@ if (empty($message)) {
     $errors['message'] = 'Message is required!';
 }
 
-// If validation fails
+// Stop if validation fails
 if (!empty($errors)) {
     echo json_encode([
         'status' => false,
@@ -38,13 +38,24 @@ if (!empty($errors)) {
     exit;
 }
 
-// Insert into database
 try {
     $db = new Database();
 
-    $stmt = $db->conn->prepare(
-        "INSERT INTO diary_tbl (Subject, Message, user_id) VALUES (:subject, :message, :user_id)"
-    );
+    if (!empty($id)) {
+        // ✅ UPDATE diary
+        $stmt = $db->conn->prepare(
+            "UPDATE diary_tbl 
+             SET Subject = :subject, Message = :message 
+             WHERE id = :id AND user_id = :user_id"
+        );
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    } else {
+        // ✅ INSERT diary
+        $stmt = $db->conn->prepare(
+            "INSERT INTO diary_tbl (Subject, Message, user_id) 
+             VALUES (:subject, :message, :user_id)"
+        );
+    }
 
     $stmt->bindParam(':subject', $subject, PDO::PARAM_STR);
     $stmt->bindParam(':message', $message, PDO::PARAM_STR);
@@ -53,12 +64,15 @@ try {
     if ($stmt->execute()) {
         echo json_encode([
             'status'  => true,
-            'success' => ['message' => 'Diary note successfully added.']
+            'success' => [
+                'message' => !empty($id)
+                    ? 'Diary note updated successfully.'
+                    : 'Diary note successfully added.'
+            ]
         ]);
         exit;
     }
 
-    // If insert fails
     echo json_encode([
         'status' => false,
         'errors' => ['database' => 'Failed to save diary note']
