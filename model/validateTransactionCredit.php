@@ -16,10 +16,11 @@
       // 1. Update transaction status
       $stmt = $db->conn->prepare('
         UPDATE transaction_tbl 
-        SET `Status` = "Credit" 
-        WHERE tCode = :tCode
+        SET `Status` = "Credit",
+        `credit_returning_date` = :rdate 
+        WHERE tCode = :tCode 
       ');
-      $stmt->execute([':tCode' => $tCode]);
+      $stmt->execute([':tCode' => $tCode, ':rdate' => $_POST['returning_date'] ?? null]);
 
       // 2. Fetch transaction details
       $stmtFetch = $db->conn->prepare('

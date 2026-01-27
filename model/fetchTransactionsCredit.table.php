@@ -328,54 +328,107 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
         });
     }
   }
+async function validateTransaction(tCode) {
+  const { value: returningDate } = await Swal.fire({
+    title: "Payment Method",
+    html: `
+      <strong class="text-danger d-block mb-2">Credit</strong>
+      <label for="returning_date">Returning Date:</label>
+      <input type="date" id="returning_date" class="form-control">
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Ok",
+    preConfirm: () => {
+      const date = document.getElementById('returning_date').value;
+      if (!date) {
+        Swal.showValidationMessage('Returning date is required');
+        return false;
+      }
 
-  async function validateTransaction(tCode) {
-    const { value: formValues } = await Swal.fire({
-      title: "Payment Method",
-      html: `<strong class="text-danger">Credit</strong>`,           
-      focusConfirm: false,
-      showCancelButton: true, 
-      confirmButtonText: "Ok",
-      cancelButtonText: "Cancel",
-    });
-
-    if (formValues) {
-        $.ajax({
-            url: 'model/validateTransactionCredit.php',
-            method: 'POST',
-            data: {
-                tCode: tCode,
-                cash: formValues[0],
-                transfer: formValues[1],
-                pos: formValues[2]
-            },
-            success: function(response) {
-                response = JSON.parse(response);
-                if (response.status) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Transaction validated!',
-                        text: response.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    refreshTransactionTable();
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation failed',
-                        text: response.errors ? response.errors.error : response.message
-                    });
-                }
-            },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Something went wrong. Please try again.'
-                });
-            }
-        });
+      const selectedDate = new Date(date);
+      const today = new Date();
+      if (selectedDate < today) {
+        Swal.showValidationMessage('Returning date cannot be in the past');
+        return false;
+      }
+      return date;
     }
+  });
+
+  if (returningDate) {
+    $.ajax({
+      url: 'model/validateTransactionCredit.php',
+      method: 'POST',
+      data: {
+        tCode: tCode,
+        returning_date: returningDate   // ✅ THIS WAS MISSING
+      },
+      success: function (response) {
+        response = JSON.parse(response);
+        if (response.status) {
+          Swal.fire('Success', response.message, 'success');
+          refreshTransactionTable();
+        } else {
+          Swal.fire('Error', response.errors?.error || response.message, 'error');
+        }
+      }
+    });
+  }
 }
+
+//   async function validateTransaction(tCode) {
+//     const { value: formValues } = await Swal.fire({
+//       title: "Payment Method",
+//       html: `<strong class="text-danger">Credit</strong>
+//               <br><br>
+//               <label for="returning_date">Returning Date:</label> 
+//               <input type="date" name="returning_date" id="returning_date" class="form-control" required>`,
+             
+//       focusConfirm: false,
+//       showCancelButton: true, 
+//       confirmButtonText: "Ok",
+//       cancelButtonText: "Cancel",
+//     });
+
+//     if (formValues) {
+//         $.ajax({
+//             url: 'model/validateTransactionCredit.php',
+//             method: 'POST',
+//             data: {
+//                 tCode: tCode,
+//                 cash: formValues[0],
+//                 transfer: formValues[1],
+//                 pos: formValues[2]
+//             },
+//             success: function(response) {
+//                 response = JSON.parse(response);
+//                 if (response.status) {
+//                     Swal.fire({
+//                         icon: 'success',
+//                         title: 'Transaction validated!',
+//                         text: response.message,
+//                         timer: 1500,
+//                         showConfirmButton: false
+//                     });
+//                     refreshTransactionTable();
+//                 } else {
+//                     Swal.fire({
+//                         icon: 'error',
+//                         title: 'Validation failed',
+//                         text: response.errors ? response.errors.error : response.message
+//                     });
+//                 }
+//             },
+//             error: function() {
+//                 Swal.fire({
+//                     icon: 'error',
+//                     title: 'Error',
+//                     text: 'Something went wrong. Please try again.'
+//                 });
+//             }
+//         });
+//     }
+// }
 </script>
+
+

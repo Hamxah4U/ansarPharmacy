@@ -47,7 +47,7 @@
                         <tbody>
                             <?php
                                 $db = new Database();
-                                $stmt = $db->conn->prepare("SELECT * FROM diary_tbl WHERE user_id = :user_id ORDER BY  `datercorded`, `timerecorded` DESC");
+                                $stmt = $db->conn->prepare("SELECT * FROM diary_tbl WHERE user_id = :user_id ORDER BY `datercorded` DESC, `timerecorded` DESC");
                                 $stmt->bindParam(':user_id', $_SESSION['userID'], PDO::PARAM_INT);
                                 $stmt->execute();
                                 $diaryNotes = $stmt->fetchAll(PDO::FETCH_ASSOC);

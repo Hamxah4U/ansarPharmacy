@@ -8,7 +8,28 @@
   $stmt = $db->conn->prepare("SELECT * from customers_tbl");
   $stmt->execute();
   $customers = $stmt->fetchAll();  
+
+  $today = date('Y-m-d');
 ?>
+<style>
+    .table-danger td {
+    background-color: #f8d7da !important;
+    color: #721c24;
+    font-weight: bold;
+  }
+
+  @keyframes blink {
+    0%   { opacity: 1; }
+    50%  { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  .blink {
+    animation: blink 2s infinite;
+    color: #d9534f;      /* red */
+    font-weight: bold;
+  }
+</style>
 <div id="wrapper">
   <!-- Sidebar -->
   <?php require 'partials/sidebar.php' ?>
@@ -32,64 +53,110 @@
 
         <br>
         <div class="table table-responsive">
-        <table class="table table-striped" id="creditors">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Customer Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Address</th>
-              <!-- <th>Credit Bal.(&#8358;)</th> -->
-               <th>Status</th>
-              <th style="text-align:center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php
-              foreach($customers as $index => $customer):?>
+          <table class="table table-striped text-nowrap" id="creditors">
+            <thead>
               <tr>
-                <td><?= $index + 1 ?></td>
-                <td><?= $customer['Fullname'] ?></td>
-                <td><?= $customer['phone'] ?></td>
-                <td><?= $customer['email'] ?></td>
-                <td><?= $customer['address'] ?></td>
-                <?php // number_format($customer['TotalCredit'], 2) ?>
-                <td>
-                  <?php
-                    // echo $customer['id'];
-                    $stmt = $db->query("SELECT SUM(COALESCE(Amount, 0)) AS amt FROM transaction_tbl t WHERE t.creditstatus = 'settlement' AND t.CID = '".$customer['id']."' GROUP BY t.CID");
-                    $rowsettlement = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                    $stmtcr = $db->query("SELECT SUM(COALESCE(Credit, 0)) AS amtcredit FROM transaction_tbl t WHERE t.Status = 'Credit' AND t.CID = '".$customer['id']."' GROUP BY t.CID");
-                    $rowcr = $stmtcr->fetch(PDO::FETCH_ASSOC);
-
-                    $settlementAmt = $rowsettlement['amt'] ?? 0;
-                    $creditAmt = $rowcr['amtcredit'] ?? 0;
-                    $bal = $settlementAmt - $creditAmt;
-
-                     
-                      if ($bal > 0) {
-                          echo '<strong class="btn btn-info">Deposit</strong>';
-                      } elseif ($bal < 0) {
-                          echo '<strong class="btn btn-danger">unpaid</strong>';
-                      } elseif ($settlementAmt == 0 && $creditAmt == 0) {
-                          echo '<strong class="btn btn-warning">uncredit</strong>';
-                      }elseif($bal == 0){
-                        echo '<strong class="btn btn-success">Cleared</strong>';
-                      }
-                     
-                  ?>
-                </td>
-                <td>
-                  <a href="/paycredit?id=<?= $customer['id'] ?>"><button type="button" class="btn btn-dark">Fund</button></a>
-                  <a href="/creditbilling?id=<?= $customer['id'] ?>"><button type="button" class="btn btn-secondary">Credit Bill</button></a>
-                  <a href=""></a>
-                </td>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Phone</th>
+                <!-- <th>Email</th> -->
+                <th>Address</th>
+                <th>Days Overdue</th>
+                <!-- <th>Credit Bal.(&#8358;)</th> -->
+                <th>Status</th>
+                <th style="text-align:center">Action</th>
               </tr>
-            <?php endforeach ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php
+                foreach($customers as $index => $customer):?>
+                <?php
+                  $stmtOverdue = $db->conn->prepare("
+                    SELECT COUNT(*) AS overdue
+                    FROM transaction_tbl
+                    WHERE 
+                      CID = :cid
+                      AND Status = 'Credit'
+                      AND credit_returning_date < CURDATE()
+                  ");
+                  $stmtOverdue->execute([':cid' => $customer['id']]);
+                  $overdueRow = $stmtOverdue->fetch(PDO::FETCH_ASSOC);
+
+                  $isOverdue = $overdueRow['overdue'] > 0;
+
+                  // days overdue calculation (if needed in future)
+                  $stmtDays = $db->conn->prepare("
+                    SELECT 
+                      MAX(DATEDIFF(credit_returning_date, TransacDate)) AS days_overdue, TransacDate, credit_returning_date
+                    FROM transaction_tbl
+                    WHERE 
+                      CID = :cid
+                      AND Status = 'Credit'
+                      AND credit_returning_date IS NOT NULL
+                      AND TransacDate IS NOT NULL
+                  ");
+                  $stmtDays->execute([':cid' => $customer['id']]);
+                  $rowDays = $stmtDays->fetch(PDO::FETCH_ASSOC);
+
+                  $daysOverdue = max(0, (int)($rowDays['days_overdue'] ?? 0));
+                ?>
+
+                <tr class="<?= $isOverdue ? 'table-danger' : '' ?>">
+                  <td><?= $index + 1 ?></td>
+                  <td><?= $customer['Fullname'] ?></td>
+                  <td><?= $customer['phone'] ?></td>
+                  <!-- <td><?php // $customer['email'] ?></td> -->
+                  <td><?= $customer['address'] ?></td>
+
+                  <td class="text-center">
+                    <?php if ($rowDays['credit_returning_date'] === $today): ?>
+                      <span class="blink">⏳ Due Today</span>
+
+                    <?php elseif ($daysOverdue > 0): ?>
+                      <span class="text-danger">
+                        <?= $daysOverdue ?> day<?= $daysOverdue > 1 ? 's' : '' ?>
+                      </span>
+
+                    <?php endif; ?>
+                  </td>
+
+
+                  <?php // number_format($customer['TotalCredit'], 2) ?>
+                  <td>
+                    <?php
+                      // echo $customer['id'];
+                      $stmt = $db->query("SELECT SUM(COALESCE(Amount, 0)) AS amt FROM transaction_tbl t WHERE t.creditstatus = 'settlement' AND t.CID = '".$customer['id']."' GROUP BY t.CID");
+                      $rowsettlement = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                      $stmtcr = $db->query("SELECT SUM(COALESCE(Credit, 0)) AS amtcredit FROM transaction_tbl t WHERE t.Status = 'Credit' AND t.CID = '".$customer['id']."' GROUP BY t.CID");
+                      $rowcr = $stmtcr->fetch(PDO::FETCH_ASSOC);
+
+                      $settlementAmt = $rowsettlement['amt'] ?? 0;
+                      $creditAmt = $rowcr['amtcredit'] ?? 0;
+                      $bal = $settlementAmt - $creditAmt;
+
+                      
+                        if ($bal > 0) {
+                            echo '<strong class="btn btn-info">Deposit</strong>';
+                        } elseif ($bal < 0) {
+                            echo '<strong class="btn btn-danger">unpaid</strong>';
+                        } elseif ($settlementAmt == 0 && $creditAmt == 0) {
+                            echo '<strong class="btn btn-warning">uncredit</strong>';
+                        }elseif($bal == 0){
+                          echo '<strong class="btn btn-success">Cleared</strong>';
+                        }
+                      
+                    ?>
+                  </td>
+                  <td>
+                    <a href="/paycredit?id=<?= $customer['id'] ?>"><button type="button" class="btn btn-dark">Fund</button></a>
+                    <a href="/creditbilling?id=<?= $customer['id'] ?>"><button type="button" class="btn btn-secondary">Credit Bill</button></a>
+                    <a href=""></a>
+                  </td>
+                </tr>
+              <?php endforeach ?>
+            </tbody>
+          </table>
         </div>
 			</div>
 		</div>
