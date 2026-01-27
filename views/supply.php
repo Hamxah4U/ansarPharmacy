@@ -36,7 +36,7 @@
 						<thead>
 							<tr>
 								<th>#</th>
-								<!-- <th>Store</th>  -->
+								<th>Store</th> 
 								<th>Product</th>   
 								             
 								<th>Purchase Cost(&#8358;)</th>
@@ -78,23 +78,22 @@
 			<div class="modal-body">
 				<form id="formSupply">
           <input type="hidden" name="supplyID" id="supplyID">
-          <input type="hidden" name="unit" id="unitID" value="7">
+          <!-- <input type="hidden" name="unit" id="unitID" value="7"> -->
 
 
-					<!-- <div class="form-group"> -->
-						<!-- <label for="">Unit/Department</label> -->
-						<!-- <select name="unit" class="form-control" id="unitID"> -->
-							<!-- <option value="--choose--">--choose--</option> -->
+					<div class="form-group">
+						<label for="">Store/Department</label>
+						<select name="unit" class="form-control" id="unitID">
+							<option value="--choose--">--choose--</option>
 							<?php
-									// require 'model/Database.php';
-									// $stmt = $db->query('SELECT * FROM `department_tbl`');
-									// $units = $stmt->fetchAll(PDO::FETCH_ASSOC);
-									// foreach($units as $unit): ?>
-									<option value="<?php //$unit['deptID']; ?>"><?php // $unit['Department']; ?></option>
-							<?php //endforeach ?>
-						<!-- </select> -->
-						<!-- <small class="text-danger" id="errorUnit"></small> -->
-					<!-- </div> -->
+									$stmt = $db->query('SELECT * FROM `department_tbl`');
+									$units = $stmt->fetchAll(PDO::FETCH_ASSOC);
+									foreach($units as $unit): ?>
+									<option value="<?php echo $unit['deptID']; ?>"><?php echo $unit['Department']; ?></option>
+							<?php endforeach ?>
+						</select>
+						<small class="text-danger" id="errorUnit"></small>
+					</div> 
 
 					<div class="form-group">
 						<label for="">Product</label>
@@ -159,7 +158,7 @@
 		},
 		columns: [
 			{ "data": null, render: (data, type, row, meta) => meta.row + 1 },
-			// { "data": "dpt" },
+			{ "data": "dpt" },
 			{ "data": "ProductName" },
 			    
 			{ "data": "Pprice"},

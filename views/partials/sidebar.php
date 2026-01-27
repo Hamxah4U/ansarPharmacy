@@ -133,7 +133,7 @@
                        <strong>Wholesales</strong></a>
                 </li>
 
-                <!-- <li class="nav-item active">
+                <li class="nav-item active">
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
                         aria-expanded="true" aria-controls="collapseTwo">
                         <i class="fas fa-hand-holding-usd"></i><strong>Creditors</strong>
@@ -144,7 +144,7 @@
                             <a class="collapse-item" href="/viewcreditors"><strong>View Creditors</strong></a>
                         </div>
                     </div>
-                </li> -->
+                </li> 
 
                 <!-- <li class="nav-item active">
                     <a class="nav-link" href="/nhisbilling">
@@ -158,12 +158,12 @@
                     </a>
                 </li>
 
-                <!-- <li class="nav-item active">
-                    <a class="nav-link" href="/billing">
-                        <i class="fas fa-chart-pie"></i> 
-                        Report
-                    </a>
-                </li> -->
+                <li class="nav-item active">
+                    <a class="nav-link" href="/inventoryreport">
+                    <i class="fas fa-search"></i>
+                    <strong>Inventory Report</strong></a>
+                </li>
+              
 
             <?php endif; ?>
 
