@@ -3,6 +3,10 @@
     require 'partials/header.php';
 		require 'model/Database.php';
 
+		//$placeholder = '(Card/Tablet/Bottle)';
+		$placeholder = '';
+		//$placeholder2 = 'per (Card/Tablet/Bottle)';
+		$placeholder2  = '';
 ?>
 
     <!-- Page Wrapper -->
@@ -114,32 +118,32 @@
 					</div> -->
 
           			<div class="form-group">
-						<label for="">Quantity (Card/Tablet/Bottle)</label>
+						<label for="">Quantity <?= $placeholder ?></label>
 						<input class="form-control" type="number" id="qty" name="qty" placeholder="Enter total quantity">
 						<small class="text-danger" id="errorQty"></small>
 					</div>
 
 					<div class="form-group">
 						<label for="ExpiryDate">ExpiryDate</label>
-						<input type="date" name="ExpiryDate" id="ExpiryDate" class="form-control" placeholder="Purchase price per (Card/Tablet/Bottle)">
+						<input type="date" name="ExpiryDate" id="ExpiryDate" class="form-control">
 						<small class="text-danger" id="errorEx"></small>
 					</div>
 
 					<div class="form-group">
 						<label for="my-input">Purchase Price (&#8358;)</label>
-						<input id="purchasePrice" class="form-control" type="int" placeholder="Purchase price per (Card/Tablet/Bottle)" name="purchasePrice" require>
+						<input id="purchasePrice" class="form-control" type="int" placeholder="Purchase price <?= $placeholder2 ?>" name="purchasePrice" require>
 						<small class="text-danger" id="errorPPrice"></small>
 					</div>
 
 					<div class="form-group">
 						<label for="my-input">Retails Price (&#8358;)</label>
-						<input class="form-control" type="int" name="price" id="priceID" placeholder="Retail price per (Card/Tablet/Bottle)" require>
+						<input class="form-control" type="int" name="price" id="priceID" placeholder="Retail price <?= $placeholder2 ?>" require>
 						<small class="text-danger" id="errorPrice"></small>
 					</div>
 
 					<div class="form-group">
 						<label for="my-input">Wholesale Price (&#8358;)</label>
-						<input class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price per (Card/Tablet/Bottle)" required>
+						<input class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
 						<small class="text-danger" id="errorWholesale"></small>
 					</div>
 					
