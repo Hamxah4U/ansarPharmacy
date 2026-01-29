@@ -40,7 +40,7 @@
 									<label for="unit">Unit:</label>
 								</div>
 								<div class="col-md-4">
-									<input type="text" name="unit" class="form-control" placeholder="Type 'all' for all dpt">
+									<input type="text" name="unit" class="form-control" placeholder="Type 'all' for all store">
 									<small class="text-danger" id="errorUnit"></small>
 								</div>
 								<div class="col-md-2">
@@ -103,7 +103,6 @@
 								</div>
 								<div class="col-md-6 text-end">
 									<button type="submit" class="btn btn-primary"><strong>Search</strong></button>
-									<!-- <input type="submit" class="btn btn-primary" value="Search__"> -->
 								</div>
 							</div>
 						</form>
@@ -116,6 +115,12 @@
 
 <?php require 'partials/footer.php'; ?>
 <script>
+	function formatMoney(value) {
+    return Number(value).toLocaleString(undefined, {
+        // minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+	}
 	$(document).ready(function () {
 			$('#adminReport').on('submit', function (e) {
 					e.preventDefault();
@@ -129,18 +134,18 @@
 											$('#errorUnit, #errorProduct, #errorF, #errorS').text('');
 											let totalAmount = 0;
 											let table = '<table class="table table-bordered table-striped">';
-											table += '<thead><tr><th>#</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th></tr></thead>';
+											table += '<thead><tr><th>#</th><th>User</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th></tr></thead>';
 											table += '<tbody>';
 											response.transactions.forEach((row, index) => {
 													totalAmount += parseFloat(row.Amount);  // Sum the amount
 													table += `<tr>
 															<td>${index + 1}</td>
-															<td>${row.tCode}</td>
-															
+															<td>${row.userfullname}</td>															
+															<td>${row.tCode}</td>															
 															<td>${row.dproduct}</td>
-															<td>${row.Price}</td>
-															<td>${row.qty}</td>
-															<td>${row.Amount}</td>
+															<td>${formatMoney(row.Price)}</td>
+															<td>${Number(row.qty).toLocaleString()}</td>
+															<td>${formatMoney(row.Amount)}</td>
 															<td>${row.Customer}</td>
 															<td>${row.TransacDate}</td>
 															<td>${row.TransacTime}</td>

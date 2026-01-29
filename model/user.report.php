@@ -37,13 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Query for transactions
-    $sql = "SELECT `supply_tbl`.`ProductName` as dproduct, t.TID, t.tCode, d.Department AS Unit, p.Productname AS Product,
+    $sql = "SELECT `u`.`Fullname` AS `userfullname`, `supply_tbl`.`ProductName` as dproduct, t.TID, t.tCode, d.Department AS Unit, p.Productname AS Product,
                    t.Price, t.qty, t.Amount, t.Customer, t.TransacDate, t.TransacTime, 
                    t.TrasacBy, t.Status
             FROM transaction_tbl t
             JOIN department_tbl d ON t.tDepartment = d.deptID
             LEFT JOIN product_tbl p ON t.Product = p.proID
             JOIN supply_tbl ON `t`.`Product` = `supply_tbl`.`SupplyID`
+            JOIN users_tbl u ON u.Email = t.TrasacBy 
             WHERE (d.Department LIKE :unit OR :unit = 'all')
               AND (`supply_tbl`.`ProductName` LIKE :product OR :product = '%')
               AND (t.TransacDate BETWEEN :sdate AND :edate)
