@@ -4,6 +4,15 @@
 		require 'model/Database.php';
 ?>
 
+
+<style>
+    .container-fluid {
+        max-height: 95vh;   
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+</style>
+
     <!-- Page Wrapper -->
 <div id="wrapper">
 	<!-- Sidebar -->
@@ -107,103 +116,7 @@
 
 <?php require 'partials/footer.php'; ?>
 <script>
-$(document).ready(function () {
-    $('#adminReport').on('submit', function (e) {
-        e.preventDefault();
-        $.ajax({
-            url: 'model/user.report.php',
-            type: 'POST',
-            dataType: 'json',
-            data: $(this).serialize(),
-            success: function (response) {
-                if (response.status) {
-                    $('#errorUnit, #errorProduct, #errorF, #errorS').text('');
-                    let totalAmount = 0;
-                    let table = '<table class="table table-bordered table-striped">';
-                    table += '<thead><tr><th>#</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th></tr></thead>';
-                    table += '<tbody>';
-                    response.transactions.forEach((row, index) => {
-                        totalAmount += parseFloat(row.Amount);  // Sum the amount
-                        table += `<tr>
-                            <td>${index + 1}</td>
-                            <td>${row.tCode}</td>
-                            
-                            <td>${row.dproduct}</td>
-                            <td>${row.Price}</td>
-                            <td>${row.qty}</td>
-                            <td>${row.Amount}</td>
-                            <td>${row.Customer}</td>
-                            <td>${row.TransacDate}</td>
-                            <td>${row.TransacTime}</td>
-                            
-                        </tr>`;
-                    });
-                    table += '</tbody></table>';
-										table += `<p><strong>Total Amount:</strong> &#8358; ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
-                    // table += `<p><strong>Total___ Amount:</strong> ${totalAmount.toFixed(2)}</p>`;
-                    $('#reportResult').html(table);
-                    
-                    const printButton = '<button id="printTable" class="btn btn-primary"><strong>Print Report</strong></button>';
-                    $('#reportResult').append(printButton);
-                    $('#printTable').on('click', function () {
-                        const tableContent = $('#reportResult').html();
-                        const printWindow = window.open('', '', 'height=600,width=800');
-                        printWindow.document.write('<html><head><title>SFGE Report</title>');
-                        printWindow.document.write('<style>');
-                        printWindow.document.write(`
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 12px;
-                            }
-                            table th, table td {
-                                border: 1px solid #ddd;
-                                padding: 8px;
-                                text-align: left;
-                            }
-                            table th {
-                                background-color: #f2f2f2;
-                            }
-                            table tr:nth-child(even) {
-                                background-color: #f9f9f9;
-                            }
-                            table tr:nth-child(odd) {
-                                background-color: #fff;
-                            }
-                            table tr:hover {
-                                background-color: #ddd;
-                            }
-                            h3 {
-                                text-align: center;
-                                font-family: Arial, sans-serif;
-                            }
-                        `);
-                        printWindow.document.write('</style>');
-                        printWindow.document.write('</head><body>');
-                        printWindow.document.write('<h3>Transaction Report</h3>');
-                        printWindow.document.write(tableContent);
-                        printWindow.document.write('</body></html>');
-                        printWindow.document.close();
-                        printWindow.print();
-                    });
-                } else {
-                    $('#errorUnit').text(response.errors.unit || '');
-                    $('#errorProduct').text(response.errors.product || '');
-                    $('#errorF').text(response.errors.startDate || '');
-                    $('#errorS').text(response.errors.endDate || '');
-                    $('#reportResult').html('<p>No records found.</p>');
-                }
-            },
-            error: function (xhr, status, error) {
-                alert('Error: ' + status + ' - ' + error);
-            }
-        });
-    });
-});
-
-	
-	/* $(document).ready(function () {
+	$(document).ready(function () {
 			$('#adminReport').on('submit', function (e) {
 					e.preventDefault();
 					$.ajax({
@@ -213,18 +126,17 @@ $(document).ready(function () {
 							data: $(this).serialize(),
 							success: function (response) {
 									if (response.status) {
-											
 											$('#errorUnit, #errorProduct, #errorF, #errorS').text('');
-											let totalAmount = 0
+											let totalAmount = 0;
 											let table = '<table class="table table-bordered table-striped">';
-											table += '<thead><tr><th>#</th><th>Code</th><th>Store</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>';
+											table += '<thead><tr><th>#</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th></tr></thead>';
 											table += '<tbody>';
 											response.transactions.forEach((row, index) => {
-												totalAmount += parseFloat(row.Amount);
+													totalAmount += parseFloat(row.Amount);  // Sum the amount
 													table += `<tr>
 															<td>${index + 1}</td>
 															<td>${row.tCode}</td>
-															<td>${row.Unit}</td>
+															
 															<td>${row.dproduct}</td>
 															<td>${row.Price}</td>
 															<td>${row.qty}</td>
@@ -232,62 +144,57 @@ $(document).ready(function () {
 															<td>${row.Customer}</td>
 															<td>${row.TransacDate}</td>
 															<td>${row.TransacTime}</td>
-															<td>${row.Status}</td>
+															
 													</tr>`;
-													table += `<tr>
-														<td colspan='6'><strong>Total</strong></td>
-														<td><strong>${totalAmount.toFixed(2)}</strong></td>
-													</tr>`;
-
 											});
 											table += '</tbody></table>';
+											table += `<p><strong>Total Amount:</strong> &#8358; ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
+											// table += `<p><strong>Total___ Amount:</strong> ${totalAmount.toFixed(2)}</p>`;
 											$('#reportResult').html(table);
-
 											
-											const printButton = '<button id="printTable" class="btn btn-primary">Print Report</button>';
+											const printButton = '<button id="printTable" class="btn btn-primary"><strong>Print Report</strong></button>';
 											$('#reportResult').append(printButton);
-
 											$('#printTable').on('click', function () {
-												const tableContent = $('#reportResult').html();
-												const printWindow = window.open('', '', 'height=600,width=800');
-												printWindow.document.write('<html><head><title>SFGE Report</title>');
-												printWindow.document.write('<style>');
-												printWindow.document.write(`
-													table {
-														width: 100%;
-														border-collapse: collapse;
-														font-family: Arial, sans-serif;
-														font-size: 12px;
-													}
-													table th, table td {
-														border: 1px solid #ddd;
-														padding: 8px;
-														text-align: left;
-													}
-													table th {
-														background-color: #f2f2f2;
-													}
-													table tr:nth-child(even) {
-														background-color: #f9f9f9;
-													}
-													table tr:nth-child(odd) {
-														background-color: #fff;
-													}
-													table tr:hover {
-														background-color: #ddd;
-													}
-													h3 {
-														text-align: center;
-														font-family: Arial, sans-serif;
-													}
-												`);
-												printWindow.document.write('</style>');
-												printWindow.document.write('</head><body>');
-												printWindow.document.write('<h3>Transaction Report</h3>');
-												printWindow.document.write(tableContent);
-												printWindow.document.write('</body></html>');
-												printWindow.document.close();
-												printWindow.print();
+													const tableContent = $('#reportResult').html();
+													const printWindow = window.open('', '', 'height=600,width=800');
+													printWindow.document.write('<html><head><title>SFGE Report</title>');
+													printWindow.document.write('<style>');
+													printWindow.document.write(`
+															table {
+																	width: 100%;
+																	border-collapse: collapse;
+																	font-family: Arial, sans-serif;
+																	font-size: 12px;
+															}
+															table th, table td {
+																	border: 1px solid #ddd;
+																	padding: 8px;
+																	text-align: left;
+															}
+															table th {
+																	background-color: #f2f2f2;
+															}
+															table tr:nth-child(even) {
+																	background-color: #f9f9f9;
+															}
+															table tr:nth-child(odd) {
+																	background-color: #fff;
+															}
+															table tr:hover {
+																	background-color: #ddd;
+															}
+															h3 {
+																	text-align: center;
+																	font-family: Arial, sans-serif;
+															}
+													`);
+													printWindow.document.write('</style>');
+													printWindow.document.write('</head><body>');
+													printWindow.document.write('<h3>Transaction Report</h3>');
+													printWindow.document.write(tableContent);
+													printWindow.document.write('</body></html>');
+													printWindow.document.close();
+													printWindow.print();
 											});
 									} else {
 											$('#errorUnit').text(response.errors.unit || '');
@@ -302,5 +209,5 @@ $(document).ready(function () {
 							}
 					});
 			});
-	}); */
+	});
 </script>

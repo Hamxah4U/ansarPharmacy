@@ -9,7 +9,7 @@
   if (isset($_GET['id'])) {
       $deptID = $_GET['id'];
 
-      $stmt = $db->query('SELECT wholesaleprice, SupplyDate, Pprice, department_tbl.Department AS dpt, supply_tbl.RecordedBy, supply_tbl.ExpiryDate, supply_tbl.Quantity, supply_tbl.SupplyID, supply_tbl.ProductName, supply_tbl.Price, supply_tbl.Department, supply_tbl.Status, supply_tbl.RecordedBy FROM supply_tbl INNER JOIN department_tbl ON supply_tbl.Department = department_tbl.deptID WHERE supply_tbl.Quantity > 0 AND supply_tbl.Department = "'.$deptID.'" GROUP BY supply_tbl.Department, ProductName, ExpiryDate ORDER BY ProductName ASC');
+      $stmt = $db->query('SELECT supplyqty, wholesaleprice, SupplyDate, Pprice, department_tbl.Department AS dpt, supply_tbl.RecordedBy, supply_tbl.ExpiryDate, supply_tbl.Quantity, supply_tbl.SupplyID, supply_tbl.ProductName, supply_tbl.Price, supply_tbl.Department, supply_tbl.Status, supply_tbl.RecordedBy FROM supply_tbl INNER JOIN department_tbl ON supply_tbl.Department = department_tbl.deptID WHERE supply_tbl.Quantity > 0 AND supply_tbl.Department = "'.$deptID.'" GROUP BY supply_tbl.Department, ProductName, ExpiryDate ORDER BY ProductName ASC');
 			$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
       // use $deptID to fetch department details
@@ -48,12 +48,13 @@
 						<thead>
 							<tr>
 								<th>#</th>
-								<!-- <th>Store</th>  -->
+								<th>Store</th> 
 								<th>Product</th>             
 								<th>Purchase Cost(&#8358;)</th>
 								<th>Retail Price(&#8358;)</th>
 								<th>Wholesale Price(&#8358;)</th>
-                <th>Qty</th>
+                <th>Inventory Qty</th>
+                <th>Supply Qty</th>
 				        <!-- <th>Action</th> -->
                 <!-- <th>Status</th> -->
 								<th>SupplyDate</th>
@@ -67,11 +68,13 @@
                   foreach ($products as $key => $product): ?>
                   <tr>
                     <td><?= $key + 1 ?></td>
+                    <td><?= $product['dpt'] ?></td>
                     <td><?= $product['ProductName'] ?></td>
                     <td><?= $product['Pprice'] ?></td>
                     <td><?= $product['Price'] ?></td>
                     <td><?= $product['wholesaleprice'] ?></td>
                     <td><?= $product['Quantity'] ?></td>
+                    <td><?= $product['supplyqty'] ?></td>
                     <!-- <td><?php // $product['SupplyID'] ?></td> -->
                     <!-- <td><?php //$product['Status'] ?></td> -->
                    

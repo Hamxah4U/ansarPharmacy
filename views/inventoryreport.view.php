@@ -23,10 +23,10 @@
 			<div class="container-fluid">
 
 					<!-- Page Heading -->
-				<div class="d-sm-flex align-items-center  mb-4">
+				<!-- <div class="d-sm-flex align-items-center  mb-4">
 					<h1 class="h3 mb-0 text-gray-800"></h1>
 					<button class="btn btn-primary" type="button" data-toggle="modal" data-target="modelSupply"><strong>Inventory Report</strong></button>
-				</div>
+				</div> -->
 
 					<!-- Content Row -->
 					<div class="table-responsive">
@@ -34,9 +34,10 @@
 							<thead>
 								<tr>
 									<th>#</th>
-									<!-- <th>Store</th> -->
+									<th>Store</th>
 									<th>Product</th>
-									<th>Qty</th>
+									<th>Inventory Qty</th>
+									<th>Supply Qty</th>
 									<th>SupplyDate</th>
 									<th>ExpiryDate</th>
 									<th>RecordedBy</th>
@@ -131,9 +132,10 @@
 		},
 		columns: [
 			{ "data": null, render: (data, type, row, meta) => meta.row + 1 },
-      // { "data": "newdpt" },
+      { "data": "newdpt" },
 			{ "data": "ProductName" },
 			{ "data": "Quantity"},
+			{ "data": "supplyqty"},
 			{ "data": "SupplyDate" },
       { "data": "ExpiryDate" },
 			{ "data": "RecordedBy" },

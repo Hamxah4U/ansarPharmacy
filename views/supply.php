@@ -46,8 +46,9 @@
 								<th>Purchase Cost(&#8358;)</th>
 								<th>Retail Price(&#8358;)</th>
 								<th>Wholesale Price(&#8358;)</th>
-                <th>Qty</th>
-				<th>Action</th>
+                <th>Inventory Qty</th>
+								<th>Supply Qty</th>
+								<th>Action</th>
                 <!-- <th>Status</th> -->
 								<th>SupplyDate</th>
                 <th>ExpiryDate</th>
@@ -169,6 +170,8 @@
 			{ "data": "Price"},
 			{ "data": "wholesaleprice"},
 			{ "data": "Quantity"},
+			{ "data": "supplyqty"},
+
 			{ 
 				"data": null,
 					"render": function (data, type, row) {

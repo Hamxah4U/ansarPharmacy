@@ -33,7 +33,8 @@
 								<tr><th colspan="5" style="text-align: center;">Today's Sales Summary</th></tr>
 								<tr>
 									<th>#</th>
-									<!-- <th>Store</th> -->
+									<th>User</th>
+									<th>Store</th>
 									<th>Product</th>
 									<th>Quantity</th>
 									<th>Amount(&#8358;)</th>
@@ -41,7 +42,14 @@
 							</thead>
 							<tbody>
 								<?php
-									$stmt = $db->conn->prepare("SELECT COALESCE(SUM(qty), 0) AS totalQty, COALESCE(SUM(Amount), 0) AS totalAmount, ProductName, department_tbl.Department FROM `transaction_tbl` JOIN supply_tbl ON supply_tbl.SupplyID = `Product` JOIN `department_tbl` ON `department_tbl`.`deptID` = tDepartment WHERE  DATE(`TransacDate`) = DATE(CURRENT_DATE) AND `transaction_tbl`.`Status` = 'Paid' GROUP BY tDepartment, Product ORDER BY totalQty DESC");
+
+									$stmt = $db->conn->prepare("SELECT Fullname, TrasacBy, COALESCE(SUM(qty), 0) AS totalQty, COALESCE(SUM(Amount), 0) AS totalAmount, ProductName, department_tbl.Department FROM `transaction_tbl` JOIN supply_tbl ON supply_tbl.SupplyID = `Product` 
+									JOIN `department_tbl` ON `department_tbl`.`deptID` = tDepartment
+									JOIN `users_tbl` ON users_tbl.Email = transaction_tbl.TrasacBy
+									WHERE  DATE(`TransacDate`) = DATE(CURRENT_DATE) AND `transaction_tbl`.`Status` = 'Paid'
+									GROUP BY TrasacBy, tDepartment, Product
+									ORDER BY TrasacBy DESC");
+
 									$stmt->execute();
 									$reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 									$total = 0;
@@ -52,7 +60,8 @@
 									?>
 									<tr>
 										<td><?= $index + 1 ?></td>
-										<!-- <td><?php // $report['Department'] ?></td> -->
+										<td><?= $report['Fullname'] ?></td>
+										<td><?= $report['Department'] ?></td>
 										<td><?= $report['ProductName'] ?></td>
 										<td><?= $report['totalQty'] ?></td>	
 										<td><?= number_format($report['totalAmount']) ?></td>									
@@ -60,7 +69,7 @@
 								<?php endforeach ?>
 							</tbody>
 							<tr>
-								<td colspan="2"><strong>Total</strong></td>
+								<td colspan="4"><strong>Total</strong></td>
 								<td><strong><?= $totalqty ?></strong></td>
 								<td><strong>&#8358;<?= number_format($total, 2) ?></strong></td>
 							</tr>
@@ -72,14 +81,30 @@
 								<tr><th colspan="6" style="text-align: center;">Today's Payment from Creditors</th></tr>
 								<tr>
 									<th>#</th>
+									<th>User</th>
 									<th>Customers</th>
 									<th>Phone</th>
 									<th>Amount(&#8358;)</th>
 								</tr>								
 							</thead>
 							<tbody>
-								<?php
-									$stmtpcredit = $db->query("SELECT SUM(COALESCE(Amount, 0)) as p_from_creditors, tCode, CID, narration, Customer FROM transaction_tbl WHERE Status = 'Paid' AND creditstatus = 'settlement' AND DATE(`TransacDate`) = DATE(CURRENT_DATE) GROUP BY CID, tCode");
+								<?php									
+									$stmtpcredit = $db->query("
+										SELECT 
+												users_tbl.Fullname,
+												SUM(COALESCE(transaction_tbl.Amount, 0)) AS p_from_creditors,
+												transaction_tbl.tCode,
+												transaction_tbl.CID,
+												transaction_tbl.narration,
+												transaction_tbl.Customer
+										FROM transaction_tbl
+										JOIN users_tbl 
+												ON users_tbl.Email = transaction_tbl.TrasacBy
+										WHERE transaction_tbl.Status = 'Paid'
+											AND transaction_tbl.creditstatus = 'settlement'
+											AND DATE(transaction_tbl.TransacDate) = CURRENT_DATE
+										GROUP BY transaction_tbl.CID, transaction_tbl.tCode
+									");
 									
 									$pcreditors = $stmtpcredit->fetchAll(PDO::FETCH_ASSOC);
 									$totalpcredit = 0;
@@ -89,6 +114,7 @@
 									?>
 									<tr>
 										<td><?= $index + 1 ?></td>
+										<td><?= $pcreditor['Fullname'] ?></td>
 										<td><?= $pcreditor['Customer'] ?></td>	
 										<td><?= $pcreditor['tCode'] ?></td>	
 										<td><?= number_format($pcreditor['p_from_creditors']) ?></td>		
@@ -97,7 +123,7 @@
 								<?php endforeach ?>
 							</tbody>
 							<tr>
-								<td colspan="3"><strong>Total</strong></td>
+								<td colspan="4"><strong>Total</strong></td>
 								<td><strong>&#8358;<?= number_format($totalpcredit, 2) ?></strong></td>
 							</tr>
 						</table>
@@ -108,6 +134,7 @@
 								<tr><th colspan="6" style="text-align: center;">Today's Creditors Summary</th></tr>
 								<tr>
 									<th>#</th>
+									<th>User</th>
 									<th>Customer</th>
 									<th>Store</th>
 									<th>Product</th>
@@ -127,6 +154,7 @@
 									?>
 									<tr>
 										<td><?= $index + 1 ?></td>
+										<td>user</td>
 										<td><?= $creditor['Fullname'] ?></td>
 										<td><?= $creditor['newdpt'] ?></td>
 										<td><?= $creditor['newpro'] ?></td>
@@ -137,8 +165,8 @@
 								<?php endforeach ?>
 							</tbody>
 							<tr>
-								<td colspan="4"><strong>Total</strong></td>
-								<td><strong><?= $totalqty ?></strong></td>
+								<td colspan="6"><strong>Total</strong></td>
+								<!-- <td><strong><?php // $totalqty ?></strong></td> -->
 								<td><strong>&#8358;<?= number_format($totalcredit, 2) ?></strong></td>
 							</tr>
 						</table>
@@ -177,10 +205,10 @@
 
 							<tr>
 								<td>1</td>
-								<td><?= number_format($dailyRow['dcash'], 2, '.') ?></td>
-								<td><?= number_format($dailyRow['dtransfer'], 2, '.') ?></td>
-								<td><?= number_format($dailyRow['dpos'], 2, '.') ?></td>
-								<td><?= number_format($dailytotal['dailyTotal'], 2, '.') ?></td>
+								<td><?= number_format($dailyRow['dcash'], 2, '.', ',') ?></td>
+								<td><?= number_format($dailyRow['dtransfer'], 2, '.', ',') ?></td>
+								<td><?= number_format($dailyRow['dpos'], 2, '.', ',') ?></td>
+								<td><?= number_format($dailytotal['dailyTotal'], 2, '.', ',') ?></td>
 							</tr>
 						</table>
 						<br /> <br />
@@ -252,9 +280,7 @@
 					<!-- Content Row -->
 			</div>
 		</div>
-<?php
-  require 'partials/footer.php';
-?>
+
 <?php $date = date('d-m-Y') ?>
 <script>
   function PrintDoc2() {
@@ -296,3 +322,7 @@
     };
   }
 </script>
+
+<?php
+  // require 'partials/footer.php';
+?>
