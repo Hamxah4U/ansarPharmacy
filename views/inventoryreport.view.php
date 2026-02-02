@@ -30,7 +30,7 @@
 
 					<!-- Content Row -->
 					<div class="table-responsive">
-						<table class="table table-striped" id="supplyTable">
+						<table class="table table-striped text-nowrap" id="supplyTable">
 							<thead>
 								<tr>
 									<th>#</th>

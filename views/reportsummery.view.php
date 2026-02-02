@@ -30,7 +30,7 @@
 						<!-- <img src="../img/SHAFA.png" alt="" width="100%"> -->
 						<table class="table table-striped">							
 							<thead>
-								<tr><th colspan="5" style="text-align: center;">Today's Sales Summary</th></tr>
+								<tr><th colspan="6" style="text-align: center;">Today's Sales Summary</th></tr>
 								<tr>
 									<th>#</th>
 									<th>User</th>
@@ -131,7 +131,7 @@
 
 						<table class="table table-striped">							
 							<thead>
-								<tr><th colspan="6" style="text-align: center;">Today's Creditors Summary</th></tr>
+								<tr><th colspan="7" style="text-align: center;">Today's Creditors Summary</th></tr>
 								<tr>
 									<th>#</th>
 									<th>User</th>
