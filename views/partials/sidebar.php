@@ -26,6 +26,11 @@
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <strong>Dashboard</strong></a>
     </li>
+    <li class="nav-item active">
+                <a class="nav-link" href="/wallet">
+                <i class="fas fa-wallet"></i>
+                <strong>Wallet</strong></a>
+            </li>
 
     <!-- Nav Item - Pages Collapse Menu -->
      <?php  if($_SESSION['role'] == 'Admin'):?>        

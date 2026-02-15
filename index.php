@@ -9,7 +9,8 @@ if(!isset($_SESSION['userID']) &&
   $uri != '/currentcapital' && 
   $uri != '/view-store' &&
   $uri != '/chart' && 
-  $uri != '/diary'
+  $uri != '/diary' &&
+  $uri != '/wallet'
   
   ) {
   header('Location: /');
@@ -42,6 +43,7 @@ $routes = [
   '/view-store' => 'controllers/viewstore.php',
   '/chart' => 'controllers/chart.php',
   '/diary' => 'controllers/diary.php',
+  '/wallet' => 'controllers/wallet.php',
 ];
 
 if(array_key_exists($uri, $routes)) {
