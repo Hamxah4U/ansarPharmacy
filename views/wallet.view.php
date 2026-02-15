@@ -102,6 +102,8 @@
         <!-- /.container-fluid -->
     </div>
 <?php
+
+use PDO;
     require 'partials/footer.php';
 ?>
 

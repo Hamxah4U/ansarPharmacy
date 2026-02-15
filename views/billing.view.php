@@ -135,6 +135,8 @@
 		<!-- End of Main Content -->
 <?php  require 'partials/footer.php'; ?>
 
+use PDO;
+
 <script>
   $(document).ready(function(){
     $('#addTransaction').on('submit', function(e){

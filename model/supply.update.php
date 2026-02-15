@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if(empty($errors)){
-      $stmt = $db->conn->prepare("UPDATE `supply_tbl` SET `Quantity` = :Quantity, `wholesaleprice` = :wholesale, `Pprice` = :Pprice, `ProductName` = :product, `ExpiryDate` = :ExpiryDate,  `Price` = :Price, Department = :Department WHERE `SupplyID` = :id ");
+      $stmt = $db->conn->prepare("UPDATE `supply_tbl` SET `supplyqty` = :supplyqty, `Quantity` = :Quantity, `wholesaleprice` = :wholesale, `Pprice` = :Pprice, `ProductName` = :product, `ExpiryDate` = :ExpiryDate,  `Price` = :Price, Department = :Department WHERE `SupplyID` = :id ");
       $stmt->bindParam(':product', $product, PDO::PARAM_STR);
       $stmt->bindParam(':ExpiryDate', $expiryDate);
       $stmt->bindParam(':Quantity', $qty);
@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $stmt->bindParam(':Pprice', $purchasePrice);
       // update
       $stmt->bindParam(':wholesale', $wholesale);
+      $stmt->bindParam(':supplyqty', $qty);
       // end of update
       $result = $stmt->execute();
       if($result){
