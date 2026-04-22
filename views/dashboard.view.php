@@ -210,7 +210,7 @@ $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
                                                 AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE())
                                             ");
                                                 $mprofit = $stmtm->fetch(PDO::FETCH_ASSOC);
-                                                echo number_format($mprofit['mprofit'], 2);
+                                                echo number_format($mprofit['mprofit'], 2, '.', ',');
                                             ?>
                                             </div>
                                         </div>
