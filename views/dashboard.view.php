@@ -181,7 +181,8 @@ $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
                                                 AND DATE(`TransacDate`) = CURRENT_DATE()
                                             ");
                                                 $dprofit = $stmtd->fetch(PDO::FETCH_ASSOC);
-                                                echo number_format($dprofit['dprofit'], 2);
+                                                // echo number_format($dprofit['dprofit'], '2', '.', ',');
+                                                echo number_format(!empty($dprofit['dprofit']) ? $dprofit['dprofit'] : 0, 2, '.', ',');
                                             ?>
                                             </div>
                                         </div>
