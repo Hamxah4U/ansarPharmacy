@@ -41,16 +41,16 @@
                 </li>
 
                 <li class="nav-item active">
-                    <a class="nav-link" href="/sales2">
-                        <i class="fas fa-shopping-cart"></i>
-                       <strong>Sales II</strong></a>
-                </li>
-
-                <li class="nav-item active">
-                    <a class="nav-link" href="/billing">
+                    <a class="nav-link" href="/retails">
                         <i class="fas fa-shopping-cart"></i>
                        <strong>Retail Sales</strong></a>
                 </li>
+
+                <!-- <li class="nav-item active">
+                    <a class="nav-link" href="/billing">
+                        <i class="fas fa-shopping-cart"></i>
+                       <strong>Retail Sales</strong></a>
+                </li> -->
 
                 <li class="nav-item active">
                     <a class="nav-link" href="/servicebilling">

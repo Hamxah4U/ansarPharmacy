@@ -45,7 +45,7 @@ $routes = [
   '/chart' => 'controllers/chart.php',
   '/diary' => 'controllers/diary.php',
   '/wallet' => 'controllers/wallet.php',
-  '/sales2' => 'controllers/sales2.php'
+  '/retails' => 'controllers/sales2.php'
 ];
 
 if(array_key_exists($uri, $routes)) {
