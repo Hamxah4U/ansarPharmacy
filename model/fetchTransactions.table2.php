@@ -628,9 +628,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
           <strong>Total Amount: ₦${totalAmount.toLocaleString()}</strong>
         </div>
         <small id="totalamounterror" class="text-danger"></small>
-        <input id="swal-input1" name="cash" type="number" class="swal2-input" placeholder="Cash: e.g 20,000" value="0">
-        <input id="swal-input2" name="transfer" type="number" class="swal2-input" placeholder="Transfer: e.g 8,500" value="0">
-        <input id="swal-input3" name="pos" type="number" class="swal2-input" placeholder="POS: e.g 500" value="0">
+        <input id="swal-input1" name="cash" type="number" class="swal2-input" placeholder="Cash: e.g 20,000">
+        <input id="swal-input2" name="transfer" type="number" class="swal2-input" placeholder="Transfer: e.g 8,500">
+        <input id="swal-input3" name="pos" type="number" class="swal2-input" placeholder="POS: e.g 500">
         <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
           <strong>Total Payment: ₦<span id="totalPayment">0</span></strong>
         </div>
