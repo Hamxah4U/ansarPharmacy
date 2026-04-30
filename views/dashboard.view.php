@@ -1,34 +1,34 @@
 <?php
-require 'partials/security.php';
-require 'partials/header.php';
-require 'model/Database.php';
+    require 'partials/security.php';
+    require 'partials/header.php';
+    require 'model/Database.php';
 
 
-$dailysql = $db->query("SELECT 
-        SUM(Amount) AS ttamount, 
-        COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS dcash, 
-        COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS dpos, 
-        COALESCE(SUM(CAST(transfer AS DECIMAL(10,2))), 0) AS dtransfer 
-    FROM transaction_tbl 
-    WHERE `Status` = 'Paid' 
-    AND DATE(TransacDate) = CURRENT_DATE() 
-    AND TID IN (
-        SELECT MIN(TID) 
+    $dailysql = $db->query("SELECT 
+            SUM(Amount) AS ttamount, 
+            COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS dcash, 
+            COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS dpos, 
+            COALESCE(SUM(CAST(transfer AS DECIMAL(10,2))), 0) AS dtransfer 
         FROM transaction_tbl 
-        WHERE DATE(TransacDate) = CURRENT_DATE() 
-        GROUP BY tCode
-    )"
-);
-$dailyRow = $dailysql->fetch(PDO::FETCH_ASSOC);
+        WHERE `Status` = 'Paid' 
+        AND DATE(TransacDate) = CURRENT_DATE() 
+        AND TID IN (
+            SELECT MIN(TID) 
+            FROM transaction_tbl 
+            WHERE DATE(TransacDate) = CURRENT_DATE() 
+            GROUP BY tCode
+        )"
+    );
+    $dailyRow = $dailysql->fetch(PDO::FETCH_ASSOC);
 
-$monthlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS mcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS mpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS mtransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
-$monthlyRow = $monthlysql->fetch(PDO::FETCH_ASSOC);
+    $monthlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS mcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS mpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS mtransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    $monthlyRow = $monthlysql->fetch(PDO::FETCH_ASSOC);
 
-$yearlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS ycash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS ypos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ytransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
-$yearlyrow = $yearlysql->fetch(PDO::FETCH_ASSOC);
+    $yearlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS ycash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS ypos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ytransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    $yearlyrow = $yearlysql->fetch(PDO::FETCH_ASSOC);
 
-$totalsql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS tcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS tpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ttransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND TID IN ( SELECT MIN(TID) FROM transaction_tbl GROUP BY tCode, TransacDate )");
-$totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
+    $totalsql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS tcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS tpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ttransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND TID IN ( SELECT MIN(TID) FROM transaction_tbl GROUP BY tCode, TransacDate )");
+    $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
 
 ?>
 
@@ -210,7 +210,8 @@ $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
                                                 AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE())
                                             ");
                                                 $mprofit = $stmtm->fetch(PDO::FETCH_ASSOC);
-                                                echo number_format($mprofit['mprofit'], 2, '.', ',');
+                                                $profitValue = $mprofit['mprofit'] ?? 0;
+                                                echo number_format($profitValue, 2);
                                             ?>
                                             </div>
                                         </div>
