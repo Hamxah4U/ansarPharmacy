@@ -101,11 +101,7 @@
         </div>
         <!-- /.container-fluid -->
     </div>
-<?php
-
-use PDO;
-    require 'partials/footer.php';
-?>
+<?php    require 'partials/footer.php'; ?>
 
 <!-- Modal -->
 <div class="modal fade" id="modalUser" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">

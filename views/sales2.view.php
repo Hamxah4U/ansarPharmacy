@@ -5,27 +5,27 @@
 ?>
 
 <?php
-function generateTransactionCode() {
-    return date('ymd') . rand(100000000, 999999999);
-}
+    function generateTransactionCode() {
+        return date('ymd') . rand(100000000, 999999999);
+    }
 
-if(!isset($_POST['tcode'])) {
-    $tCode = generateTransactionCode();
-    unset($_SESSION['customername']);
-} else {
-    $tCode = $_POST['tcode'];
-}
+    if(!isset($_POST['tcode'])) {
+        $tCode = generateTransactionCode();
+        unset($_SESSION['customername']);
+    } else {
+        $tCode = $_POST['tcode'];
+    }
 
-if (isset($_POST['customername'])) {
-    $_SESSION['customername'] = $_POST['customername'];
-}
+    if (isset($_POST['customername'])) {
+        $_SESSION['customername'] = $_POST['customername'];
+    }
 
-if (isset($_POST['dpt'])) {
-    $_SESSION['dpt'] = $_POST['dpt'];
-}
+    if (isset($_POST['dpt'])) {
+        $_SESSION['dpt'] = $_POST['dpt'];
+    }
 
-$dpt = isset($_SESSION['dpt']) ? $_SESSION['dpt'] : "";
-$cname = isset($_SESSION['customername']) ? $_SESSION['customername'] : "";
+    $dpt = isset($_SESSION['dpt']) ? $_SESSION['dpt'] : "";
+    $cname = isset($_SESSION['customername']) ? $_SESSION['customername'] : "";
 
 ?>
 
@@ -53,12 +53,18 @@ $cname = isset($_SESSION['customername']) ? $_SESSION['customername'] : "";
 
                 <!-- Transaction Header Form -->
                 <form id="transactionHeaderForm">
+                    <div class="form-group col-md-4">
+                        <label><strong>Scan Barcode (Camera):</strong></label>
+                        <div id="reader" style="width:100%;"></div>
+                    </div>
                     <div class="form-row">
+
                         <div class="form-group col-md-4">
                             <label><strong>Billing Code:</strong></label>
                             <input value="<?= $tCode; ?>" readonly type="text" name="tcode" class="form-control" />
                             <input type="hidden" name="nhisno" value="" />
                         </div>
+
                         <div class="form-group col-md-4">
                             <label><strong>Customer's Name:</strong></label>
                             <input name="customername" value="<?= $cname; ?>" type="text" class="form-control" id="customerName" />
@@ -459,6 +465,75 @@ function validateTransaction() {
                     toastr.error('Connection error. Please try again.');
                 }
             });
+        }
+    });
+}
+</script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<script>
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Scanned: ${decodedText}`);
+
+        // Stop scanner after scan (optional)
+       // html5QrcodeScanner.clear();
+
+        // Send barcode to your system
+        fetchProductByBarcode(decodedText);
+    }
+
+    function onScanFailure(error) {
+        // ignore scan errors (too noisy)
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: 250 }
+    );
+
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+
+<script>
+    function fetchProductByBarcode(barcode) {
+
+    $.ajax({
+        url: 'model/fetchProductByBarcode.php',
+        type: 'POST',
+        data: { barcode: barcode },
+        dataType: 'json',
+        success: function(res) {
+
+            if(res.status) {
+
+                const data = res.data;
+
+                // 1. SET STORE
+                $('#storeSelect').val(data.Department).trigger('change');
+
+                // Wait for products to load before selecting
+                setTimeout(() => {
+
+                    // 2. SELECT PRODUCT BY NAME
+                    $("#productSelect option").each(function() {
+                        if($(this).text().trim() === data.ProductName.trim()) {
+                            $(this).prop('selected', true).trigger('change');
+                        }
+                    });
+
+                    // 3. FILL PRICE & STOCK
+                    $('#price').val(data.Price);
+                    $('#stockQty').val(data.StockQuantity);
+
+                }, 500);
+
+            } else {
+                Swal.fire('Error', res.message, 'error');
+            }
+
+        },
+        error: function() {
+            Swal.fire('Error', 'Failed to fetch product', 'error');
         }
     });
 }
