@@ -51,8 +51,12 @@
                     </a>
                 </div>
 
+                <button type="button" onclick="switchCamera()" class="btn btn-secondary mt-2">
+                    Switch Camera
+                </button>
                 <!-- Transaction Header Form -->
                 <form id="transactionHeaderForm">
+                    
                     <div class="form-group col-md-4">
                         <label><strong>Scan Barcode (Camera):</strong></label>
                         <div id="reader" style="width:100%;"></div>
@@ -472,69 +476,158 @@ function validateTransaction() {
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <script>
-    function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Scanned: ${decodedText}`);
+let html5QrCode;
+let currentCameraId = null;
+let isScanning = false;
 
-        // Stop scanner after scan (optional)
-       // html5QrcodeScanner.clear();
+// START CAMERA
+function startScanner(cameraId = null) {
 
-        // Send barcode to your system
-        fetchProductByBarcode(decodedText);
-    }
+    html5QrCode = new Html5Qrcode("reader");
 
-    function onScanFailure(error) {
-        // ignore scan errors (too noisy)
-    }
+    Html5Qrcode.getCameras().then(devices => {
 
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: 250 }
-    );
+        if (devices.length === 0) {
+            alert("No camera found");
+            return;
+        }
 
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        // Pick back camera first
+        if (!cameraId) {
+            const backCam = devices.find(c => c.label.toLowerCase().includes("back"));
+            cameraId = backCam ? backCam.id : devices[0].id;
+        }
+
+        currentCameraId = cameraId;
+
+        html5QrCode.start(
+            cameraId,
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            onScanSuccess
+        );
+
+    }).catch(err => {
+        console.error(err);
+    });
+}
+
+// SWITCH CAMERA
+function switchCamera() {
+
+    if (!html5QrCode) return;
+
+    Html5Qrcode.getCameras().then(devices => {
+
+        if (devices.length < 2) {
+            Swal.fire('Info', 'Only one camera available', 'info');
+            return;
+        }
+
+        let index = devices.findIndex(c => c.id === currentCameraId);
+        let next = (index + 1) % devices.length;
+
+        html5QrCode.stop().then(() => {
+            startScanner(devices[next].id);
+        });
+
+    });
+}
+
+// SCAN SUCCESS
+function onScanSuccess(decodedText) {
+
+    // prevent duplicate scans
+    if (isScanning) return;
+    isScanning = true;
+
+    console.log("Scanned:", decodedText);
+
+    fetchProductByBarcode(decodedText);
+
+    // unlock after 1.5 seconds
+    setTimeout(() => {
+        isScanning = false;
+    }, 1500);
+}
+
+// INIT
+$(document).ready(function () {
+    startScanner();
+});
 </script>
 
 <script>
-    function fetchProductByBarcode(barcode) {
+function fetchProductByBarcode(barcode) {
 
     $.ajax({
         url: 'model/fetchProductByBarcode.php',
         type: 'POST',
         data: { barcode: barcode },
         dataType: 'json',
+
         success: function(res) {
 
-            if(res.status) {
+            if (res.status) {
 
                 const data = res.data;
 
-                // 1. SET STORE
+                // 🔊 SUCCESS SOUND
+                document.getElementById('beepSuccess').play();
+
+                // SET STORE
                 $('#storeSelect').val(data.Department).trigger('change');
 
-                // Wait for products to load before selecting
+                // WAIT FOR PRODUCTS TO LOAD
                 setTimeout(() => {
 
-                    // 2. SELECT PRODUCT BY NAME
-                    $("#productSelect option").each(function() {
-                        if($(this).text().trim() === data.ProductName.trim()) {
-                            $(this).prop('selected', true).trigger('change');
-                        }
-                    });
+                    // SELECT PRODUCT
+                    $('#productSelect').val(data.SupplyID).trigger('change');
 
-                    // 3. FILL PRICE & STOCK
+                    // FILL DATA
                     $('#price').val(data.Price);
                     $('#stockQty').val(data.StockQuantity);
+
+                    // AUTO QTY
+                    $('#issuedqty').val(1);
+
+                    // AUTO ADD
+                    setTimeout(() => {
+                        addProductToTable();
+                    }, 200);
 
                 }, 500);
 
             } else {
-                Swal.fire('Error', res.message, 'error');
-            }
 
+                // 🔴 ERROR SOUND
+                document.getElementById('beepError').play();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Product Not Found',
+                    text: res.message
+                });
+            }
         },
+
         error: function() {
-            Swal.fire('Error', 'Failed to fetch product', 'error');
+
+            document.getElementById('beepError').play();
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Server Error',
+                text: 'Something went wrong'
+            });
         }
     });
 }
 </script>
+
+
+<!-- audio sound -->
+<audio id="beepSuccess" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="beepError" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
