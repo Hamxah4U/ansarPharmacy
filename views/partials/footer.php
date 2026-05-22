@@ -44,6 +44,7 @@
 
     <script src="js/chart.js"></script>
 
+    <script src="css/qrcode.min.js"></script>
     
 
 </body>
