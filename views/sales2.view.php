@@ -5,52 +5,57 @@
 ?>
 
 <style>
-  /* Force Select2 to match Bootstrap 4 form-control elements perfectly */
+/* Force Select2 to match Bootstrap 4 form-control elements perfectly */
 .select2-container--bootstrap-4 .select2-selection--single {
-    height: calc(1.5em + .75rem + 2px) !important;
-    padding: 0.375rem 0.75rem !important; /* Standard BS4 padding */
-    font-size: 1rem !important;
-    font-weight: 400 !important;
-    background-color: #fff !important;
-    border: 1px solid #ced4da !important;
-    border-radius: .25rem !important;
-    display: flex;
-    align-items: center; /* Let flexbox handle vertical centering cleanly */
+  height: calc(1.5em + .75rem + 2px) !important;
+  padding: 0.375rem 0.75rem !important;
+  /* Standard BS4 padding */
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  background-color: #fff !important;
+  border: 1px solid #ced4da !important;
+  border-radius: .25rem !important;
+  display: flex;
+  align-items: center;
+  /* Let flexbox handle vertical centering cleanly */
 }
 
 /* Fix vertical centering alignment for select dropdown text */
 .select2-container--bootstrap-4 .select2-selection--single .select2-selection__rendered {
-    line-height: normal !important; /* Remove the massive forced line-height */
-    padding-left: 0 !important;
-    color: #495057 !important;
-    width: 100%;
+  line-height: normal !important;
+  /* Remove the massive forced line-height */
+  padding-left: 0 !important;
+  color: #495057 !important;
+  width: 100%;
 }
 
 /* Match the drop arrow alignment */
 .select2-container--bootstrap-4 .select2-selection--single .select2-selection__arrow {
-    height: 100% !important; /* Let it scale to the container height */
-    top: 0 !important;
-    right: .75rem !important;
-    display: flex;
-    align-items: center;
+  height: 100% !important;
+  /* Let it scale to the container height */
+  top: 0 !important;
+  right: .75rem !important;
+  display: flex;
+  align-items: center;
 }
 
 /* Match focus shadow color effect from sb-admin template style */
 .select2-container--bootstrap-4.select2-container--focus .select2-selection--single {
-    border-color: #bac8f3 !important;
-    outline: 0 !important;
-    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25) !important;
+  border-color: #bac8f3 !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25) !important;
 }
+
 .select2-container {
-    display: block !important;
-    width: 100% !important;
+  display: block !important;
+  width: 100% !important;
 }
 
 .select2-dropdown {
-    z-index: 1060 !important; 
-    border: 1px solid #ced4da !important;
-    border-radius: 0.25rem !important;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  z-index: 1060 !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 0.25rem !important;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 </style>
 
@@ -96,7 +101,15 @@
         <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
           <h1 class="h3 mb-0 text-danger">Retails Dashboard</h1>
-          <a href="/billing">
+             <div class="row mb-3">
+          <div class="col-md-12 text-center">
+            <button type="button" id="btnToggleInput" class="btn btn-primary" onclick="handleInputToggle()"
+              data-current-method="manual">
+              <i class="fas fa-camera"></i> Switch to Barcode/QR Scanner
+            </button>
+          </div>
+        </div>
+          <a href="retails">
             <button class="btn btn-primary" type="button"><strong>Billing</strong></button>
           </a>
         </div>
@@ -105,20 +118,6 @@
                     Switch Camera
                 </button> -->
         <!-- Transaction Header Form -->
-
-        <div class="row mb-3">
-          <div class="col-md-12 text-center">
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-              <button type="button" id="btnUseScanner" class="btn btn-primary active"
-                onclick="toggleInputMethod('scanner')">
-                <i class="fas fa-camera"></i> Use Barcode/QR Scanner
-              </button>
-              <button type="button" id="btnUseManual" class="btn btn-secondary" onclick="toggleInputMethod('manual')">
-                <i class="fas fa-keyboard"></i> Use Manual Product Selection
-              </button>
-            </div>
-          </div>
-        </div>
 
         <form id="transactionHeaderForm">
           <div class="form-row">
@@ -135,7 +134,7 @@
             </div>
           </div>
 
-          <div id="cameraSection" class="form-row justify-content-center mb-3">
+          <div id="cameraSection" class="form-row justify-content-center mb-3" style="display: none;">
             <div class="form-group col-md-6 text-center">
               <label><strong>Scan Barcode (Camera Active):</strong></label>
               <div id="reader"
@@ -147,7 +146,7 @@
         </form>
 
         <!-- Product Selection Row -->
-        <div id="manualEntrySection" style="display: none;">
+        <div id="manualEntrySection">
           <div class="form-row">
             <div class="form-group col-md-6">
               <label><strong>Store:</strong></label>
@@ -462,24 +461,24 @@ function validateTransaction() {
   Swal.fire({
     title: "Payment Method",
     html: `
-            <small id="totalamounterror" class="text-danger"></small>
-            <div class="form-group">
-                <label>Cash (₦):</label>
-                <input id="cashInput" type="number" class="form-control" placeholder="0">
-            </div>
-            <div class="form-group">
-                <label>Transfer (₦):</label>
-                <input id="transferInput" type="number" class="form-control" placeholder="0">
-            </div>
-            <div class="form-group">
-                <label>POS (₦):</label>
-                <input id="posInput" type="number" class="form-control" placeholder="0" value="0">
-            </div>
-            <div class="form-group">
-                <label>Total Amount to Pay:</label>
-                <input id="totalAmount" type="text" class="form-control" readonly>
-            </div>
-        `,
+              <small id="totalamounterror" class="text-danger"></small>
+              <div class="form-group">
+                  <label>Cash (₦):</label>
+                  <input id="cashInput" type="number" class="form-control" placeholder="0">
+              </div>
+              <div class="form-group">
+                  <label>Transfer (₦):</label>
+                  <input id="transferInput" type="number" class="form-control" placeholder="0">
+              </div>
+              <div class="form-group">
+                  <label>POS (₦):</label>
+                  <input id="posInput" type="number" class="form-control" placeholder="0" value="0">
+              </div>
+              <div class="form-group">
+                  <label>Total Amount to Pay:</label>
+                  <input id="totalAmount" type="text" class="form-control" readonly>
+              </div>
+          `,
     showCancelButton: true,
     confirmButtonText: "Validate",
     cancelButtonText: "Cancel",
@@ -649,7 +648,7 @@ function onScanSuccess(decodedText) {
 
 // INIT
 $(document).ready(function() {
-  startScanner();
+  // startScanner();
 });
 </script>
 
@@ -740,6 +739,7 @@ function toggleInputMethod(method) {
     }
   } else if (method === 'manual') {
     // Toggle Layout visibility
+
     $('#cameraSection').hide();
     $('#manualEntrySection').show();
 
@@ -748,7 +748,7 @@ function toggleInputMethod(method) {
     $('#btnUseScanner').addClass('btn-secondary').removeClass('btn-primary active');
 
     // Kill active streaming hardware tracking tracks to clear camera indicators
-    if (html5QrCode && typeof html5QrCode.stop === 'function' && isScanning) {
+    if (html5QrCode && typeof html5QrCode.stop === 'function') {
       html5QrCode.stop().then(() => {
         isScanning = false;
         console.log("Camera engine streaming paused safely.");
@@ -761,15 +761,57 @@ function toggleInputMethod(method) {
 </script>
 
 <script>
-   
-
 $('#productSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true,
-    width: '100%',
-    dropdownParent: $('#transactionHeaderForm')
+  theme: 'bootstrap-4',
+  placeholder: '--choose--',
+  allowClear: true,
+  width: '100%',
+  dropdownParent: $('#transactionHeaderForm')
 });
+</script>
+
+<script>
+function handleInputToggle() {
+  var $btn = $('#btnToggleInput');
+  var currentMethod = $btn.data('current-method'); // Reads data-current-method attribute
+
+  if (currentMethod === 'manual') {
+    // 1. Switch layout view to Scanner
+    $('#manualEntrySection').hide();
+    $('#cameraSection').show();
+
+    // 2. Change button UI to handle switching back to manual
+    $btn.removeClass('btn-primary')
+      .addClass('btn-secondary')
+      .html('<i class="fas fa-keyboard"></i> Switch to Manual Selection')
+      .data('current-method', 'scanner'); // Update state
+
+    // 3. Turn on the camera
+    if (typeof startScanner === 'function') {
+      startScanner();
+    }
+  } else {
+    // 1. Switch layout view back to Manual
+    $('#cameraSection').hide();
+    $('#manualEntrySection').show();
+
+    // 2. Reset button UI back to default
+    $btn.removeClass('btn-secondary')
+      .addClass('btn-primary')
+      .html('<i class="fas fa-camera"></i> Switch to Barcode/QR Scanner')
+      .data('current-method', 'manual'); // Update state
+
+    // 3. Cleanly kill the camera stream tracking
+    if (html5QrCode && typeof html5QrCode.stop === 'function') {
+      html5QrCode.stop().then(function() {
+        isScanning = false;
+        console.log("Camera stream safely paused.");
+      }).catch(function(err) {
+        console.error("Error pausing scanner stream: ", err);
+      });
+    }
+  }
+}
 </script>
 <!-- audio sound -->
 <audio id="beepSuccess" src="sound/wood_plank_flicks.ogg"></audio>
