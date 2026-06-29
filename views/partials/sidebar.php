@@ -13,7 +13,7 @@
         </div>
         <div class="sidebar-brand-text mx-3">
             <!-- Smart billing -->
-            <img src="../../img/ansar.png" alt="" style="width: 30%;">
+            <img src="../../img/logo.jpg" alt="" style="width: 30%;">
         </div>
     </a>  
 

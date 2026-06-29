@@ -60,8 +60,8 @@
                             <i class="fas fa-download fa-sm text-white-50"></i> <strong>Generate Report</strong>
                         </a>   
                     <?php endif ?>
-                </div>
-
+                </div>                
+                <div> <!-- scroll vertically -->
                 <!-- admin report dashboard -->
                 <?php if($_SESSION['role'] == 'Admin'): ?>
                     <div class="row">
@@ -161,8 +161,7 @@
                             </div>
                         </div>
                         </div>
-                    </div>
-                    <br/>
+                    </div> <br/>
 
                     <strong>Gross Profit</strong>
                     <div class="row">
@@ -379,7 +378,6 @@
                         </div>
                         </div>
                     </div>
-
                     <!-- total cash colleted -->
                     <strong>Total Cash Collect</strong>
                     <div class="row">
@@ -463,7 +461,6 @@
                         </div>
                         </div>
                     </div>
-
                     <!-- total transfer recieved -->
                     <strong>Total Transfer Receive</strong>
                     <div class="row">
@@ -547,7 +544,6 @@
                         </div>
                         </div>
                     </div>
-
                     <!-- total pos recieve -->
                     <strong>Total POS Receive</strong>
                     <div class="row">
@@ -632,104 +628,6 @@
                         </div>
                     </div>
 
-                <div class="row">
-                    <!-- Earnings (Monthly) Card Example -->
-                    <!-- <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-primary shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">___Profit (Daily)</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                          <?php
-                                            $stmt = $db->query('SELECT DATE(t.TransacDate) AS ttdate, SUM((t.Price - s.Pprice) * t.qty) AS daily_profit FROM transaction_tbl t JOIN supply_tbl s ON t.Product = s.SupplyID WHERE t.TransacDate = CURRENT_DATE GROUP BY DATE(t.TransacDate)');
-                                            $daily = $stmt->fetch(PDO::FETCH_ASSOC);
-                                            echo number_format($daily['daily_profit'], 2, '.');
-                                          ?>
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                      <i class="fas fa-money-bill fa-2x text-gray-2000"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-
-                    <!-- Earnings (Monthly) Card Example -->
-                    <!-- <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-success shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Profit (MOnthly)</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                          <?php
-                                              $stmt = $db->query('SELECT YEAR(t.TransacDate) AS year, MONTH(t.TransacDate) AS month, SUM((t.Price - s.Pprice) * t.qty) AS monthly_profit FROM transaction_tbl t JOIN supply_tbl s ON t.Product = s.SupplyID WHERE YEAR(t.TransacDate) = YEAR(CURRENT_DATE) AND MONTH(t.TransacDate) = MONTH(CURRENT_DATE) GROUP BY YEAR(t.TransacDate), MONTH(t.TransacDate);');
-                                              $monthly = $stmt->fetch(PDO::FETCH_ASSOC);
-                                              echo number_format($monthly['monthly_profit'], 2, '.');
-                                          ?>
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-money-bill fa-2x text-gray-2000"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-
-                    <!-- Earnings (Monthly) Card Example -->
-                    <!-- <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-info shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Profit (Yearly)</div>
-                                        <div class="row no-gutters align-items-center">
-                                            <div class="col-auto">
-                                                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
-                                                  <?php
-                                                    $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `yearlyTotal` FROM `transaction_tbl` WHERE YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
-                                                    $yearlyTotal = $stmt->fetch(PDO::FETCH_ASSOC);
-                                                    echo number_format($yearlyTotal['yearlyTotal'], 2, '.');
-                                                  ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-money-bill fa-2x text-gray-2000"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-
-                    <!-- Pending Requests Card Example -->
-                    <!-- <div class="col-xl-3 col-md-6 mb-4">
-                      <div class="card border-left-warning shadow h-100 py-2">
-                        <div class="card-body">
-                          <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Profit</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                  <?php
-                                    $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `totalTransaction` FROM `transaction_tbl`');
-                                    $total = $stmt->fetch(PDO::FETCH_ASSOC);
-                                    echo number_format($total['totalTransaction'], '2', '.');
-                                  ?>
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-money-bill fa-2x text-gray-2000"></i>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div> -->
-                </div>
-
                 <!-- user dahsboard report -->
                 <?php else: ?>
                 <?php require 'seller.report.php' ?>                
@@ -737,7 +635,7 @@
                 <!-- Content Row -->
             </div>
             <!-- /.container-fluid -->
-
+            </div>
         </div>
         <!-- End of Main Content -->
 <?php

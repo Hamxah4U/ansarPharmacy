@@ -13,7 +13,7 @@
     <!-- End of Sidebar -->
 
     <!-- Content Wrapper -->
-<div id="content-wrapper" class="d-flex flex-column">
+<div id="content-wrapper" class="d-flex flex-column" >
 
     <!-- Main Content -->
     <div id="content">
@@ -24,7 +24,7 @@
         <!-- End of Topbar -->
 
         <!-- Begin Page Content -->
-        <div class="container-fluid">
+        <div class="container-fluid" style="max-height: 200px;">
 
         <div class="row mb-4">
             <div class="col-md-12 col-lg-12">

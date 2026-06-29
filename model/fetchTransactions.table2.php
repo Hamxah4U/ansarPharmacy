@@ -471,13 +471,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
                       totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
                       
                       // Show success
-                      Swal.fire({
+                     /*  Swal.fire({
                           icon: 'success',
                           title: 'Updated!',
                           text: 'Quantity updated successfully',
                           timer: 1500,
                           showConfirmButton: false
-                      });
+                      }); */
                       
                       // Highlight the updated row
                       row.css('backgroundColor', '#d4edda');
