@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $expiryDate = htmlspecialchars($_POST['ExpiryDate']);
     $SupplyID = htmlspecialchars($_POST['supplyID']);
     $purchasePrice = htmlspecialchars($_POST['purchasePrice']);
+    $productCode = htmlspecialchars($_POST['productCode']);
 
     // update
     $wholesale = htmlspecialchars($_POST['wholesale']);
@@ -43,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if(empty($errors)){
-      $stmt = $db->conn->prepare("UPDATE `supply_tbl` SET `supplyqty` = :supplyqty, `Quantity` = :Quantity, `wholesaleprice` = :wholesale, `Pprice` = :Pprice, `ProductName` = :product, `ExpiryDate` = :ExpiryDate,  `Price` = :Price, Department = :Department WHERE `SupplyID` = :id ");
+      $stmt = $db->conn->prepare("UPDATE `supply_tbl` SET `productcode` = :productcode, `supplyqty` = :supplyqty, `Quantity` = :Quantity, `wholesaleprice` = :wholesale, `Pprice` = :Pprice, `ProductName` = :product, `ExpiryDate` = :ExpiryDate,  `Price` = :Price, Department = :Department WHERE `SupplyID` = :id ");
+      $stmt->bindParam(':productcode', $productCode);
       $stmt->bindParam(':product', $product, PDO::PARAM_STR);
       $stmt->bindParam(':ExpiryDate', $expiryDate);
       $stmt->bindParam(':Quantity', $qty);

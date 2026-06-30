@@ -4,61 +4,6 @@
     require 'model/Database.php';
 ?>
 
-<style>
-/* Force Select2 to match Bootstrap 4 form-control elements perfectly */
-.select2-container--bootstrap-4 .select2-selection--single {
-  height: calc(1.5em + .75rem + 2px) !important;
-  padding: 0.375rem 0.75rem !important;
-  /* Standard BS4 padding */
-  font-size: 1rem !important;
-  font-weight: 400 !important;
-  background-color: #fff !important;
-  border: 1px solid #ced4da !important;
-  border-radius: .25rem !important;
-  display: flex;
-  align-items: center;
-  /* Let flexbox handle vertical centering cleanly */
-}
-
-/* Fix vertical centering alignment for select dropdown text */
-.select2-container--bootstrap-4 .select2-selection--single .select2-selection__rendered {
-  line-height: normal !important;
-  /* Remove the massive forced line-height */
-  padding-left: 0 !important;
-  color: #495057 !important;
-  width: 100%;
-}
-
-/* Match the drop arrow alignment */
-.select2-container--bootstrap-4 .select2-selection--single .select2-selection__arrow {
-  height: 100% !important;
-  /* Let it scale to the container height */
-  top: 0 !important;
-  right: .75rem !important;
-  display: flex;
-  align-items: center;
-}
-
-/* Match focus shadow color effect from sb-admin template style */
-.select2-container--bootstrap-4.select2-container--focus .select2-selection--single {
-  border-color: #bac8f3 !important;
-  outline: 0 !important;
-  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25) !important;
-}
-
-.select2-container {
-  display: block !important;
-  width: 100% !important;
-}
-
-.select2-dropdown {
-  z-index: 1060 !important;
-  border: 1px solid #ced4da !important;
-  border-radius: 0.25rem !important;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-</style>
-
 <?php
     function generateTransactionCode() {
         return date('ymd') . rand(100000000, 999999999);

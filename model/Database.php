@@ -29,9 +29,9 @@
     }
 
     $db = new Database();
-    $storeName = 'ANSAR PHARMACY & STORE';
+    $storeName = 'MAI RABO PATENT MEDICINE AND COSMETICS STORE';
     $subhead = 'GLOBAL SERVICE LTD';
-    $state = 'Address: 83/19 Mango Street Jos Plateau State.';
-    $phone = '07051383610';
+    $state = 'Address: GRA, Bauchi, Bauchi State';
+    $phone = '08028289235';
     
 ?>

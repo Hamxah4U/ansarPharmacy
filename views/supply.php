@@ -107,16 +107,13 @@
 					</div>
 
 					<!-- <div class="form-group">
-						<label for="">Pack</label>
-						<input class="form-control" type="number" id="PackID" name="pack" placeholder="e.g 20" id="packID">
-						<small class="text-danger" id="errorPack"></small>
+						<label for="">Product code (QR/Barcode):</label>
+						<input class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
+						<small class="text-danger" id="errorProductCode"></small>
 					</div> -->
-
-					<!-- <div class="form-group">
-						<label for="">Tablet/card/</label>
-						<input class="form-control" type="int" id="tabletID" name="unitpack" placeholder="e.g 500 pcs" required>
-						<small class="text-danger" id="errorPack"></small>
-					</div> -->
+						<input hidden class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
+					
+					
 
           			<div class="form-group">
 						<label for="">Quantity <?= $placeholder ?></label>
@@ -142,11 +139,13 @@
 						<small class="text-danger" id="errorPrice"></small>
 					</div>
 
-					<div class="form-group">
+					<!-- <div class="form-group">
 						<label for="my-input">Wholesale Price (&#8358;)</label>
 						<input class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
 						<small class="text-danger" id="errorWholesale"></small>
-					</div>
+					</div> -->
+					<input hidden value="1" class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
+
 					
 					<button type="submit" class="btn btn-primary" id="action-btn" data-mode='add'><strong>Save</strong></button>
 				</form>
@@ -195,6 +194,7 @@
     $('#qty').text();
     $('#ExpiryDate').text();
     $('#priceID').text();
+		$('#productCodeID').text();
     $('#action-btn').removeClass('btn-info').addClass('btn-primary').text('save').data('mode', 'add');
   }
 
@@ -262,6 +262,7 @@
 			$('#PackID').val(response.pack);
 			$('#tabletID').val(response.UnitPack);
 			//update end
+			$('#productCodeID').val(response.productcode);
 			$('#supplyID').val(response.SupplyID);
 			$('#unitID').val(response.Department);
 			$('#qty').val(response.Quantity);

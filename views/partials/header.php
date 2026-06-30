@@ -47,10 +47,109 @@
             min-width: 120px;
             cursor: pointer;
         }
-        .container-fluid {
-            max-height: 200px;
-        }
+        
     </style>
+
+    
+<style>
+  /* Force Select2 to match Bootstrap 4 form-control elements perfectly */
+  .select2-container--bootstrap-4 .select2-selection--single {
+    height: calc(1.5em + .75rem + 2px) !important;
+    padding: 0.375rem 0.75rem !important;
+    /* Standard BS4 padding */
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    background-color: #fff !important;
+    border: 1px solid #ced4da !important;
+    border-radius: .25rem !important;
+    display: flex;
+    align-items: center;
+    /* Let flexbox handle vertical centering cleanly */
+  }
+
+  /* Fix vertical centering alignment for select dropdown text */
+  .select2-container--bootstrap-4 .select2-selection--single .select2-selection__rendered {
+    line-height: normal !important;
+    /* Remove the massive forced line-height */
+    padding-left: 0 !important;
+    color: #495057 !important;
+    width: 100%;
+  }
+
+  /* Match the drop arrow alignment */
+  .select2-container--bootstrap-4 .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    /* Let it scale to the container height */
+    top: 0 !important;
+    right: .75rem !important;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Match focus shadow color effect from sb-admin template style */
+  .select2-container--bootstrap-4.select2-container--focus .select2-selection--single {
+    border-color: #bac8f3 !important;
+    outline: 0 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25) !important;
+  }
+
+  .select2-container {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .select2-dropdown {
+    z-index: 1060 !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+  #wrapper {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #accordionSidebar {
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  #content-wrapper {
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+
+    /* Custom Elegant Scrollbar Styles */
+    ::-webkit-scrollbar {
+    width: 8px;  /* Width of vertical scrollbar */
+    height: 8px; /* Height of horizontal scrollbar */
+    }
+
+    /* Track background */
+    ::-webkit-scrollbar-track {
+    background: #f1f3f9; 
+    border-radius: 4px;
+    }
+    
+    /* Scrollbar Handle/Thumb */
+    ::-webkit-scrollbar-thumb {
+    background: #bac8f3; /* Soft blue matching your focused select2 borders */
+    border-radius: 4px;
+    transition: background 0.3s ease;
+    }
+
+    /* Scrollbar Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+    background: #4e73df; /* Primary theme color when interacted with */
+    }
+
+    /* Smooth scrolling experience for scrollable containers */
+    #accordionSidebar, #content-wrapper {
+    scroll-behavior: smooth;
+    }
+</style>
+
 
 </head>
 <body id="page-top">

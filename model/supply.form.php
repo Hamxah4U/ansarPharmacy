@@ -11,6 +11,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
         $ExpiryDate = htmlspecialchars($_POST['ExpiryDate']);
         $purchasePrice = htmlspecialchars($_POST['purchasePrice']);
         $supplyqty = htmlspecialchars($_POST['qty']);
+        $productCode = htmlspecialchars($_POST['productCode']);
 
         //update
         // $pack = htmlspecialchars($_POST['pack']);
@@ -66,7 +67,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
             } else {
                 $user = $_SESSION['email'];
                 // $qty =  $unitpack * $pack;
-                $stmt = $db->conn->prepare("INSERT INTO `supply_tbl` (`Department`, `ProductName`, `Quantity`, `supplyqty`, `Price`, `Pprice`, `ExpiryDate`, `RecordedBy`, `wholesaleprice`) VALUES (:dpt, :product, :qty , :supplyqty, :price, :Pprice, :ExpiryDate, :RecordedBy, :wholesale) ");
+                $stmt = $db->conn->prepare("INSERT INTO `supply_tbl` (`productcode`, `Department`, `ProductName`, `Quantity`, `supplyqty`, `Price`, `Pprice`, `ExpiryDate`, `RecordedBy`, `wholesaleprice`) VALUES (:productcode, :dpt, :product, :qty , :supplyqty, :price, :Pprice, :ExpiryDate, :RecordedBy, :wholesale) ");
                 $stmt->bindParam(':dpt', $unit, PDO::PARAM_INT);
                 $stmt->bindParam(':product', $product, PDO::PARAM_STR);
                 $stmt->bindParam(':qty', $qty, PDO::PARAM_INT);
@@ -75,6 +76,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 $stmt->bindParam(':Pprice', $purchasePrice);
                 $stmt->bindParam(':ExpiryDate', $ExpiryDate);
                 $stmt->bindParam(':RecordedBy', $user);
+                $stmt->bindParam(':productcode', $productCode);
                 //updates
                 // $stmt->bindParam(':pack', $pack);
                 // $stmt->bindParam(':unitpack', $unitpack);
