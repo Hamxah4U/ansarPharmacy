@@ -4,14 +4,21 @@
 			<i class="fa fa-bars"></i>
 	</button>
 	<?php
-		$stmt = $db->conn->prepare("SELECT SUM(COALESCE(`Quantity` * `Pprice`)) AS `current_capital` FROM `supply_tbl` GROUP BY `Department`, `ProductName`, `ExpiryDate`,`SupplyDate`");
-		$stmt->execute();
-		$capitals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		// $stmt = $db->conn->prepare("SELECT SUM(COALESCE(`Quantity` * `Pprice`)) AS `current_capital` FROM `supply_tbl` GROUP BY `Department`, `ProductName`, `ExpiryDate`,`SupplyDate`");
+		// $stmt->execute();
+		// $capitals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-		$totalCapital = 0;
-		foreach($capitals as $index => $capital){
-			$totalCapital += $capital['current_capital'];
-		}
+		// $totalCapital = 0;
+		// foreach($capitals as $index => $capital){
+		// 	$totalCapital += $capital['current_capital'];
+		// }
+
+		$stmt = $db->conn->prepare("SELECT SUM(COALESCE(`Quantity` * `Pprice`, 0)) AS `total_capital` FROM `supply_tbl`");
+    $stmt->execute();
+    $capitalRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // No foreach loop required!
+    $totalCapital = $capitalRow['total_capital'] ?? 0;
 	?>
 
 	<!-- <?php //if($_SESSION['role'] == 'Admin'):?>  
