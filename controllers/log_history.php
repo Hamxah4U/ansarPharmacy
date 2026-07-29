@@ -1,0 +1,1 @@
+<?php require 'views/audit_history.view.php' ?>

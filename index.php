@@ -48,6 +48,7 @@ $routes = [
   '/wallet' => 'controllers/wallet.php',
   '/retails' => 'controllers/sales2.php',
   '/inventory-reconciliation' => 'controllers/reconciliation.php',
+  '/log_history' => 'controllers/log_history.php',
 ];
 
 if(array_key_exists($uri, $routes)) {
