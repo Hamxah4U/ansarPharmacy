@@ -4,7 +4,6 @@
 		require 'model/Database.php';
 ?>
 
-
 <style>
     .container-fluid {
         max-height: 95vh;   

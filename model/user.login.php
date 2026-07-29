@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
   if(empty($errors)){
     $status = 'Active';
-    $stmt = $conn->prepare('SELECT `Department`, `Role`, `Email`, `Phone`, `UserPassword`, `userID`, `Fullname`  FROM `users_tbl` WHERE `Status` = :userstatus AND `Email` = :email OR `Phone` = :phone');
+    $stmt = $conn->prepare('SELECT `super_role`, `Department`, `Role`, `Email`, `Phone`, `UserPassword`, `userID`, `Fullname`  FROM `users_tbl` WHERE `Status` = :userstatus AND `Email` = :email OR `Phone` = :phone');
     $stmt->execute(['email' => $email, 'phone' => $email, 'userstatus' => $status]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $fname = $user['Fullname'];
       $role = $user['Role'];
       $department = $user['Department'];
+      $super_role = $user['super_role'];
       
       if(password_verify($password, $userPassword)){
         if($password === 'password'){
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           $_SESSION['fname'] = $fname;
           $_SESSION['role'] = $role;
           $_SESSION['department'] = $department;
+          $_SESSION['super_role'] = $super_role;
           $success['message'] = 'Login successful, please wait...';
           $success['redirect'] = '/changepassword';
         }else{
@@ -51,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           $_SESSION['fname'] = $fname;
           $_SESSION['role'] = $role;
           $_SESSION['department'] = $department;
+          $_SESSION['super_role'] = $super_role;
           $success['message'] = 'Login successful, please wait...';
           $success['redirect'] = '/dashboard';
         }

@@ -131,7 +131,7 @@
 
             <div class="form-group col-md-3">
               <label><strong>Price (₦):</strong></label>
-              <input type="text" id="price" class="form-control" readonly>
+              <input type="text" id="price" class="form-control" >
             </div>
 
             <div class="form-group col-md-3">
