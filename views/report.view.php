@@ -215,6 +215,10 @@ $(document).ready(function () {
                                             data-qty="${item.qty}">
                                         Edit <span class="fas fa-edit"></span>
                                     </button>
+
+																		<button class="btn btn-sm btn-danger return-trans-btn" 
+																			data-tid="${item.TID}" data-product="${item.dproduct}" 
+																			data-price="${item.Price}" data-qty="${item.qty}">Return</button>
                                 </td>
                             </tr>`;
                         });
@@ -347,6 +351,52 @@ $(document).ready(function () {
         printWindow.document.close();
         printWindow.print();
     });
+
+		$(document).on('click', '.return-trans-btn', function () {
+    const tid = $(this).data('tid');
+    const product = $(this).data('product');
+    const price = parseFloat($(this).data('price'));
+    const qty = parseInt($(this).data('qty'));
+
+    $('#return_tid').val(tid);
+    $('#return_product_name').val(product);
+    $('#return_purchased_qty').val(qty);
+    $('#return_qty').attr('max', qty).val(1);
+    $('#return_refund_amount').val(formatMoney(price * 1));
+
+    // Recalculate refund amount dynamically on quantity change
+    $('#return_qty').off('input').on('input', function () {
+        const reqQty = parseInt($(this).val()) || 0;
+        $('#return_refund_amount').val(formatMoney(price * reqQty));
+    });
+
+    $('#returnModal').modal('show');
+});
+
+	// Submit Return Form
+	$('#returnProductForm').on('submit', function (e) {
+			e.preventDefault();
+			if (!confirm('Are you sure you want to process this return? Money will be refunded and inventory restored.')) {
+					return;
+			}
+
+			$.ajax({
+					url: 'model/return.product.php',
+					type: 'POST',
+					dataType: 'json',
+					data: $(this).serialize(),
+					success: function (res) {
+							alert(res.message);
+							if (res.status) {
+									$('#returnModal').modal('hide');
+									$('#adminReport').trigger('submit'); // Reload updated table
+							}
+					},
+					error: function (xhr, status, error) {
+							alert('Return request failed: ' + error);
+					}
+			});
+		});
 });
 </script>
 
@@ -403,6 +453,49 @@ $(document).ready(function () {
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-info">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Return Product Modal -->
+<div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="returnProductForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="returnModalLabel">Process Product Return</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" class="text-danger">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" name="tid" id="return_tid">
+            <div class="form-group mb-3">
+                <label>Product Name</label>
+                <input type="text" id="return_product_name" class="form-control" readonly>
+            </div>
+            <div class="form-group mb-3">
+                <label>Purchased Quantity</label>
+                <input type="text" id="return_purchased_qty" class="form-control" readonly>
+            </div>
+            <div class="form-group mb-3">
+                <label>Return Quantity</label>
+                <input type="number" name="return_qty" id="return_qty" class="form-control" required min="1">
+            </div>
+            <div class="form-group mb-3">
+                <label>Refund Amount (&#8358;)</label>
+                <input type="text" id="return_refund_amount" class="form-control" readonly>
+            </div>
+            <div class="form-group mb-3">
+                <label>Reason for Return</label>
+                <textarea name="reason" class="form-control" rows="2" placeholder="e.g. Expired, Damaged, Wrong item"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Confirm Refund & Restore Stock</button>
         </div>
       </form>
     </div>
