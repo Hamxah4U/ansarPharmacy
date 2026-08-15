@@ -116,103 +116,226 @@
 <script>
 	function formatMoney(value) {
     return Number(value).toLocaleString(undefined, {
-        // minimumFractionDigits: 2,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
-	}
-	$(document).ready(function () {
-			$('#adminReport').on('submit', function (e) {
-					e.preventDefault();
-					$.ajax({
-							url: 'model/user.report.php',
-							type: 'POST',
-							dataType: 'json',
-							data: $(this).serialize(),
-							success: function (response) {
-									if (response.status) {
-											$('#errorUnit, #errorProduct, #errorF, #errorS').text('');
-											let totalAmount = 0;
-											let table = '<table class="table table-bordered table-striped">';
-											table += '<thead><tr><th>#</th><th>Customer</th><th>Seller</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th><th>Action</th></tr></thead>';
-											table += '<tbody>';
-											response.transactions.forEach((row, index) => {
-													totalAmount += parseFloat(row.Amount);  // Sum the amount
-													table += `<tr>
-															<td>${index + 1}</td>
-															<td>${row.Customer}</td>
-															<td>${row.userfullname}</td>															
-															<td>${row.tCode}</td>															
-															<td>${row.dproduct}</td>
-															<td>${formatMoney(row.Price)}</td>
-															<td>${Number(row.qty).toLocaleString()}</td>
-															<td>${formatMoney(row.Amount)}</td>
-															<td>${row.Customer}</td>
-															<td>${row.TransacDate}</td>
-															<td>${row.TransacTime}</td>
-															<td><button class='btn btn-primary'>Reseipt</button></td>
+}
+
+// Global variable to hold group details for printing
+let currentGroupReceipt = null;
+
+$(document).ready(function () {
+    $('#adminReport').on('submit', function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: 'model/user.report.php',
+            type: 'POST',
+            dataType: 'json',
+            data: $(this).serialize(),
+            success: function (response) {
+                if (response.status && response.transactions.length > 0) {
+                    $('#errorUnit, #errorProduct, #errorF, #errorS').text('');
+
+                    // Group transactions by tCode
+                    const grouped = {};
+                    let grandTotal = 0;
+
+                    response.transactions.forEach((row) => {
+                        const code = row.tCode || 'N/A';
+                        if (!grouped[code]) {
+                            grouped[code] = {
+                                customer: row.Customer,
+                                seller: row.userfullname,
+                                date: row.TransacDate,
+                                time: row.TransacTime,
+                                items: [],
+                                groupTotal: 0
+                            };
+                        }
+                        const amount = parseFloat(row.Amount) || 0;
+                        grouped[code].items.push(row);
+                        grouped[code].groupTotal += amount;
+                        grandTotal += amount;
+                    });
+
+                    // Store global grouped object to access in modal
+                    window.groupedTransactions = grouped;
+
+                    let table = '<table class="table table-bordered">';
+                    table += '<thead><tr><th>#</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Date</th><th>Time</th><th>Action</th></tr></thead>';
+                    table += '<tbody>';
+
+                    let rowCounter = 1;
+
+                    // Render Grouped Subheadings and Items
+                    Object.keys(grouped).forEach((tCode) => {
+                        const group = grouped[tCode];
+                        
+                        // Group Subheading Header
+                        table += `
+													<tr class="table-secondary">
+															<td colspan="9">
+																	<div class="d-flex justify-content-between align-items-center">
+																			<div>
+																					<strong>Customer:</strong> ${group.customer} &nbsp;|&nbsp; 
+																					<strong>Transaction Code:</strong> ${tCode} &nbsp;|&nbsp; 
+																					<strong>Total:</strong> &#8358; ${formatMoney(group.groupTotal)}
+																			</div>
+																			<div>
+																					<button class="btn btn-sm btn-primary view-receipt-btn" data-code="${tCode}">
+																							Receipt
+																					</button>
+																			</div>
+																	</div>
+															</td>
 													</tr>`;
-											});
-											table += '</tbody></table>';
-											table += `<p><strong>Total Amount:</strong> &#8358; ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`;
-											// table += `<p><strong>Total___ Amount:</strong> ${totalAmount.toFixed(2)}</p>`;
-											$('#reportResult').html(table);
-											
-											const printButton = '<button id="printTable" class="btn btn-primary"><strong>Print Report</strong></button>';
-											$('#reportResult').append(printButton);
-											$('#printTable').on('click', function () {
-													const tableContent = $('#reportResult').html();
-													const printWindow = window.open('', '', 'height=600,width=800');
-													printWindow.document.write('<html><head><title>SFGE Report</title>');
-													printWindow.document.write('<style>');
-													printWindow.document.write(`
-															table {
-																	width: 100%;
-																	border-collapse: collapse;
-																	font-family: Arial, sans-serif;
-																	font-size: 12px;
-															}
-															table th, table td {
-																	border: 1px solid #ddd;
-																	padding: 8px;
-																	text-align: left;
-															}
-															table th {
-																	background-color: #f2f2f2;
-															}
-															table tr:nth-child(even) {
-																	background-color: #f9f9f9;
-															}
-															table tr:nth-child(odd) {
-																	background-color: #fff;
-															}
-															table tr:hover {
-																	background-color: #ddd;
-															}
-															h3 {
-																	text-align: center;
-																	font-family: Arial, sans-serif;
-															}
-													`);
-													printWindow.document.write('</style>');
-													printWindow.document.write('</head><body>');
-													printWindow.document.write('<h3>Transaction Report</h3>');
-													printWindow.document.write(tableContent);
-													printWindow.document.write('</body></html>');
-													printWindow.document.close();
-													printWindow.print();
-											});
-									} else {
-											$('#errorUnit').text(response.errors.unit || '');
-											$('#errorProduct').text(response.errors.product || '');
-											$('#errorF').text(response.errors.startDate || '');
-											$('#errorS').text(response.errors.endDate || '');
-											$('#reportResult').html('<p>No records found.</p>');
-									}
-							},
-							error: function (xhr, status, error) {
-									alert('Error: ' + status + ' - ' + error);
-							}
-					});
-			});
-	});
+
+                        // Render Group Items
+                        group.items.forEach((item) => {
+                            table += `<tr>
+                               <td>${rowCounter++}</td>
+															<td>${item.dproduct}</td>
+															<td>${formatMoney(item.Price)}</td>
+															<td>${Number(item.qty).toLocaleString()}</td>
+															<td>${formatMoney(item.Amount)}</td>
+															<td>${item.TransacDate}</td>
+															<td>${item.TransacTime}</td>
+															<td>edit</td>
+													</tr>`;
+                        });
+                    });
+
+                    table += '</tbody></table>';
+                    table += `<p class="mt-3 fs-5"><strong>Grand Total:</strong> &#8358; ${formatMoney(grandTotal)}</p>`;
+                    
+                    $('#reportResult').html(table);
+
+                    const printButton = '<button id="printTable" class="btn btn-primary mb-3"><strong>Print Full Report</strong></button>';
+                    $('#reportResult').prepend(printButton);
+
+                    $('#printTable').on('click', function () {
+                        const tableContent = $('#reportResult').html();
+                        const printWindow = window.open('', '', 'height=600,width=800');
+                        printWindow.document.write('<html><head><title>SFGE Report</title>');
+                        printWindow.document.write('<style>');
+                        printWindow.document.write(`
+                            table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+                            table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            table th, .table-secondary { background-color: #f2f2f2; }
+                            h3 { text-align: center; font-family: Arial, sans-serif; }
+                            #printTable { display: none; }
+                        `);
+                        printWindow.document.write('</style></head><body>');
+                        printWindow.document.write('<h3>Transaction Report</h3>');
+                        printWindow.document.write(tableContent);
+                        printWindow.document.write('</body></html>');
+                        printWindow.document.close();
+                        printWindow.print();
+                    });
+
+                } else {
+                    $('#errorUnit').text(response.errors?.unit || '');
+                    $('#errorProduct').text(response.errors?.product || '');
+                    $('#errorF').text(response.errors?.startDate || '');
+                    $('#errorS').text(response.errors?.endDate || '');
+                    $('#reportResult').html('<p>No records found.</p>');
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Error: ' + status + ' - ' + error);
+            }
+        });
+    });
+
+    // Handle Receipt Modal Open
+    $(document).on('click', '.view-receipt-btn', function () {
+        const tCode = $(this).data('code');
+        const group = window.groupedTransactions[tCode];
+        currentGroupReceipt = group;
+
+        let receiptHTML = `
+            <div id="receiptContent" style="font-family: Arial, sans-serif; font-size: 14px;">
+                <div class="text-center mb-3">
+                    <h4 style="margin:0;"><?= $storeName; ?></h4>
+                    <p style="margin:0;"><?= $state.' | '. $phone?></p>
+                    <hr>
+                </div>
+                <p><strong>Customer:</strong> ${group.customer}</p>
+                <p><strong>Transaction Code:</strong> ${tCode}</p>
+                <p><strong>Seller:</strong> ${group.seller}</p>
+                <p><strong>Date/Time:</strong> ${group.date} ${group.time}</p>
+                <table class="table table-bordered table-sm mt-3">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        group.items.forEach(item => {
+            receiptHTML += `
+                <tr>
+                    <td>${item.dproduct}</td>
+                    <td>${Number(item.qty).toLocaleString()}</td>
+                    <td>&#8358; ${formatMoney(item.Price)}</td>
+                    <td>&#8358; ${formatMoney(item.Amount)}</td>
+                </tr>`;
+        });
+
+        receiptHTML += `
+                    </tbody>
+                </table>
+                <div class="text-end fw-bold mt-2">
+                    <h5>Total: &#8358; ${formatMoney(group.groupTotal)}</h5>
+                </div>
+            </div>`;
+
+        $('#receiptModalBody').html(receiptHTML);
+        $('#receiptModal').modal('show');
+    });
+
+    // Handle Printable Receipt
+    $('#printReceiptBtn').on('click', function () {
+        const receiptContent = $('#receiptContent').html();
+        const printWindow = window.open('', '', 'height=600,width=500');
+        printWindow.document.write('<html><head><title>Print Receipt</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write(`
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .text-center { text-align: center; }
+            .text-end { text-align: right; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            table th, table td { border: 1px solid #000; padding: 6px; text-align: left; font-size: 12px; }
+            hr { border: 0.5px solid #ccc; }
+        `);
+        printWindow.document.write('</style></head><body>');
+        printWindow.document.write(receiptContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    });
+});
 </script>
+
+<!-- Receipt Modal -->
+<div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="receiptModalLabel">Transaction Receipt</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" class="text-danger">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="receiptModalBody">
+        <!-- Receipt Content Injected via JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="printReceiptBtn"><i class="fas fa-print"></i> Print Receipt</button>
+      </div>
+    </div>
+  </div>
+</div>
