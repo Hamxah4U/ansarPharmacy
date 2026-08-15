@@ -10,6 +10,20 @@
         overflow-y: auto;
         overflow-x: hidden;
     }
+		@media print {
+    body * {
+        visibility: hidden;
+    }
+    #receiptModalBody, #receiptModalBody * {
+        visibility: visible;
+    }
+    #receiptModalBody {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
 </style>
 
     <!-- Page Wrapper -->
