@@ -50,8 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               AND (t.TransacDate BETWEEN :sdate AND :edate)
               AND t.Status = :status
               AND (:user = 'all' OR t.TrasacBy = :user)
-              GROUP BY t.TID";
-            //ORDER BY t.TransacDate DESC";
+              GROUP BY t.TID
+            ORDER BY t.TransacDate DESC";
     
     $stmt = $db->conn->prepare($sql);
     $stmt->execute([

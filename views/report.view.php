@@ -121,12 +121,12 @@
     });
 }
 
-// Global variable to hold group details for printing
 let currentGroupReceipt = null;
 
 $(document).ready(function () {
+    // Form submission handler to fetch report
     $('#adminReport').on('submit', function (e) {
-        e.preventDefault();
+        if (e) e.preventDefault();
         $.ajax({
             url: 'model/user.report.php',
             type: 'POST',
@@ -136,7 +136,6 @@ $(document).ready(function () {
                 if (response.status && response.transactions.length > 0) {
                     $('#errorUnit, #errorProduct, #errorF, #errorS').text('');
 
-                    // Group transactions by tCode
                     const grouped = {};
                     let grandTotal = 0;
 
@@ -158,7 +157,6 @@ $(document).ready(function () {
                         grandTotal += amount;
                     });
 
-                    // Store global grouped object to access in modal
                     window.groupedTransactions = grouped;
 
                     let table = '<table class="table table-bordered">';
@@ -167,41 +165,44 @@ $(document).ready(function () {
 
                     let rowCounter = 1;
 
-                    // Render Grouped Subheadings and Items
                     Object.keys(grouped).forEach((tCode) => {
                         const group = grouped[tCode];
                         
-                        // Group Subheading Header
                         table += `
-													<tr class="table-secondary">
-															<td colspan="9">
-																	<div class="d-flex justify-content-between align-items-center">
-																			<div>
-																					<strong>Customer:</strong> ${group.customer} &nbsp;|&nbsp; 
-																					<strong>Transaction Code:</strong> ${tCode} &nbsp;|&nbsp; 
-																					<strong>Total:</strong> &#8358; ${formatMoney(group.groupTotal)}
-																			</div>
-																			<div>
-																					<button class="btn btn-sm btn-primary view-receipt-btn" data-code="${tCode}">
-																							Receipt
-																					</button>
-																			</div>
-																	</div>
-															</td>
-													</tr>`;
+                            <tr class="table-secondary">
+                                <td colspan="8">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>Customer:</strong> ${group.customer} &nbsp;|&nbsp; 
+                                            <strong>Transaction Code:</strong> ${tCode} &nbsp;|&nbsp; 
+                                            <strong>Total:</strong> &#8358; ${formatMoney(group.groupTotal)}
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-primary view-receipt-btn" data-code="${tCode}">Receipt</button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>`;
 
-                        // Render Group Items
                         group.items.forEach((item) => {
                             table += `<tr>
-                               <td>${rowCounter++}</td>
-															<td>${item.dproduct}</td>
-															<td>${formatMoney(item.Price)}</td>
-															<td>${Number(item.qty).toLocaleString()}</td>
-															<td>${formatMoney(item.Amount)}</td>
-															<td>${item.TransacDate}</td>
-															<td>${item.TransacTime}</td>
-															<td>edit</td>
-													</tr>`;
+                                <td>${rowCounter++}</td>
+                                <td>${item.dproduct}</td>
+                                <td>${formatMoney(item.Price)}</td>
+                                <td>${Number(item.qty).toLocaleString()}</td>
+                                <td>${formatMoney(item.Amount)}</td>
+                                <td>${item.TransacDate}</td>
+                                <td>${item.TransacTime}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info edit-trans-btn" 
+                                            data-tid="${item.TID}" 
+                                            data-product="${item.dproduct}" 
+                                            data-price="${item.Price}" 
+                                            data-qty="${item.qty}">
+                                        Edit <span class="fas fa-edit"></span>
+                                    </button>
+                                </td>
+                            </tr>`;
                         });
                     });
 
@@ -216,19 +217,7 @@ $(document).ready(function () {
                     $('#printTable').on('click', function () {
                         const tableContent = $('#reportResult').html();
                         const printWindow = window.open('', '', 'height=600,width=800');
-                        printWindow.document.write('<html><head><title>SFGE Report</title>');
-                        printWindow.document.write('<style>');
-                        printWindow.document.write(`
-                            table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
-                            table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                            table th, .table-secondary { background-color: #f2f2f2; }
-                            h3 { text-align: center; font-family: Arial, sans-serif; }
-                            #printTable { display: none; }
-                        `);
-                        printWindow.document.write('</style></head><body>');
-                        printWindow.document.write('<h3>Transaction Report</h3>');
-                        printWindow.document.write(tableContent);
-                        printWindow.document.write('</body></html>');
+                        printWindow.document.write('<html><head><title>SFGE Report</title><style>table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; } table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; } table th, .table-secondary { background-color: #f2f2f2; } h3 { text-align: center; font-family: Arial, sans-serif; } #printTable { display: none; }</style></head><body><h3>Transaction Report</h3>' + tableContent + '</body></html>');
                         printWindow.document.close();
                         printWindow.print();
                     });
@@ -247,7 +236,53 @@ $(document).ready(function () {
         });
     });
 
-    // Handle Receipt Modal Open
+    // Handle Edit Button Click
+    $(document).on('click', '.edit-trans-btn', function () {
+        const tid = $(this).data('tid');
+        const product = $(this).data('product');
+        const price = $(this).data('price');
+        const qty = $(this).data('qty');
+
+        $('#edit_tid').val(tid);
+        $('#edit_product_name').val(product);
+        $('#edit_price').val(price);
+        $('#edit_qty').val(qty);
+        $('#edit_amount').val(formatMoney(price * qty));
+
+        $('#editModal').modal('show');
+    });
+
+    // Auto recalculate amount on input
+    $('#edit_price, #edit_qty').on('input', function () {
+        const p = parseFloat($('#edit_price').val()) || 0;
+        const q = parseInt($('#edit_qty').val()) || 0;
+        $('#edit_amount').val(formatMoney(p * q));
+    });
+
+    // Save Edited Transaction via AJAX
+    $('#editTransactionForm').on('submit', function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: 'model/update.transaction.php',
+            type: 'POST',
+            dataType: 'json',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.status) {
+                    alert(res.message);
+                    $('#editModal').modal('hide');
+                    $('#adminReport').trigger('submit'); // Reload updated table data
+                } else {
+                    alert(res.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Update request failed: ' + error);
+            }
+        });
+    });
+
+    // View Receipt Modal Handler
     $(document).on('click', '.view-receipt-btn', function () {
         const tCode = $(this).data('code');
         const group = window.groupedTransactions[tCode];
@@ -265,14 +300,7 @@ $(document).ready(function () {
                 <p><strong>Seller:</strong> ${group.seller}</p>
                 <p><strong>Date/Time:</strong> ${group.date} ${group.time}</p>
                 <table class="table table-bordered table-sm mt-3">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
                     <tbody>`;
 
         group.items.forEach(item => {
@@ -297,23 +325,11 @@ $(document).ready(function () {
         $('#receiptModal').modal('show');
     });
 
-    // Handle Printable Receipt
+    // Printable Receipt Handler
     $('#printReceiptBtn').on('click', function () {
         const receiptContent = $('#receiptContent').html();
         const printWindow = window.open('', '', 'height=600,width=500');
-        printWindow.document.write('<html><head><title>Print Receipt</title>');
-        printWindow.document.write('<style>');
-        printWindow.document.write(`
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .text-center { text-align: center; }
-            .text-end { text-align: right; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            table th, table td { border: 1px solid #000; padding: 6px; text-align: left; font-size: 12px; }
-            hr { border: 0.5px solid #ccc; }
-        `);
-        printWindow.document.write('</style></head><body>');
-        printWindow.document.write(receiptContent);
-        printWindow.document.write('</body></html>');
+        printWindow.document.write('<html><head><title>Print Receipt</title><style>body { font-family: Arial, sans-serif; margin: 20px; } .text-center { text-align: center; } .text-end { text-align: right; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } table th, table td { border: 1px solid #000; padding: 6px; text-align: left; font-size: 12px; } hr { border: 0.5px solid #ccc; }</style></head><body>' + receiptContent + '</body></html>');
         printWindow.document.close();
         printWindow.print();
     });
@@ -336,6 +352,45 @@ $(document).ready(function () {
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" id="printReceiptBtn"><i class="fas fa-print"></i> Print Receipt</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Edit Transaction Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editTransactionForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Edit Item Transaction</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" class="text-danger">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" name="tid" id="edit_tid">
+            <div class="form-group mb-3">
+                <label>Product Name</label>
+                <input type="text" id="edit_product_name" class="form-control" readonly>
+            </div>
+            <div class="form-group mb-3">
+                <label>Price (&#8358;)</label>
+                <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required min="0">
+            </div>
+            <div class="form-group mb-3">
+                <label>Quantity</label>
+                <input type="number" name="qty" id="edit_qty" class="form-control" required min="1">
+            </div>
+            <div class="form-group mb-3">
+                <label>Calculated Amount (&#8358;)</label>
+                <input type="text" id="edit_amount" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-info">Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
