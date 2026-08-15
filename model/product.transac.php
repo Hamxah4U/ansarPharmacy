@@ -4,6 +4,93 @@
   if($_SERVER['REQUEST_METHOD'] == 'POST'){
     session_start();
     $errors = [];
+    
+    $customername = htmlspecialchars($_POST['customername']); 
+    $dpt          = htmlentities($_POST['dpt']); // cite: 4
+    $product      = isset($_POST['product']) ? htmlspecialchars($_POST['product']) : ''; // cite: 4
+    $tcode        = htmlspecialchars($_POST['tcode']); 
+    $unitType     = $_POST['unit_type'] ?? 'full'; 
+    $issuedqty    = floatval($_POST['issuedqty']); // e.g. 2 Cartons, 3 halves, etc.
+    $user         = $_SESSION['email']; 
+    $nhisno       = htmlspecialchars($_POST['nhisno'] ?? ''); // cite: 4
+    $unit_type    = htmlspecialchars($_POST['unit_type'] ?? null);
+
+    // 1. Fetch Product details
+    $stmtqty = $db->checkExist('SELECT * FROM `supply_tbl` WHERE `Department` = :dpt AND `SupplyID` = :ProductName', [ // cite: 4
+      ':dpt' => $dpt, // cite: 4
+      ':ProductName' => $product // cite: 4
+    ]);
+    $row = $stmtqty->fetch(PDO::FETCH_ASSOC); // cite: 4
+
+    if (!$row) {
+      $errors['product'] = 'Product not found!';
+    } else {
+      $pcsPerUnit = !empty($row['pcs_per_unit']) ? intval($row['pcs_per_unit']) : 1;
+
+      // 2. Fetch Unit Multiplier from DB
+      $stmtU = $db->conn->prepare("SELECT unit_label, multiplier FROM unit_types_tbl WHERE unit_key = :ukey LIMIT 1");
+      $stmtU->execute([':ukey' => $unitType]);
+      $uRow = $stmtU->fetch(PDO::FETCH_ASSOC);
+
+      $multiplier = $uRow ? floatval($uRow['multiplier']) : 1.0;
+      $unitLabel  = $uRow ? $uRow['unit_label'] : '';
+
+      // 3. Calculate Pieces Deducted & Selling Price
+      if ($unitType === 'pc') {
+          $qtyInPcs  = 1 * $issuedqty;
+          $unitPrice = !empty($row['pc_price']) ? floatval($row['pc_price']) : (floatval($row['Price']) / $pcsPerUnit);
+      } else {
+          $qtyInPcs  = ($pcsPerUnit * $multiplier) * $issuedqty;
+          
+          if ($unitType === 'half' && !empty($row['half_price'])) {
+              $unitPrice = floatval($row['half_price']);
+          } elseif ($unitType === 'quarter' && !empty($row['quarter_price'])) {
+              $unitPrice = floatval($row['quarter_price']);
+          } else {
+              $unitPrice = floatval($row['Price']) * $multiplier;
+          }
+      }
+
+      // 4. Validate Available Stock in Pieces
+      if ($qtyInPcs > $row['Quantity']) {
+          $errors['outofStock'] = 'Requested quantity exceeds stock! Available pieces: ' . $row['Quantity'];
+      }
+    }
+
+    if(empty($errors)){
+      $amount = $unitPrice * $issuedqty;
+      $purchaseprice = ($row['Pprice'] / $pcsPerUnit) * $qtyInPcs; // Cost price prorated per piece
+
+      $stmt = $db->conn->prepare("INSERT INTO transaction_tbl (tCode, tDepartment, Product, Price, qty, unit_type, Amount, Customer, TrasacBy, nhisno, TransacTime, TransacDate, pprice)
+       VALUES(:tcode, :tdpt, :product, :price, :qty, :unit_type, :amount, :customer, :TrasacBy, :nhisno, CURRENT_TIME(), CURDATE(), :pprice ) "); // cite: 4
+       
+      $stmt->execute([
+        ':tcode'   => $tcode, // cite: 4
+        ':tdpt'    => $dpt, // cite: 4
+        ':product' => $product, // cite: 4
+        ':price'   => $unitPrice,
+        ':qty'     => $qtyInPcs, // Stores actual piece quantity deducted from inventory
+        ':amount'  => $amount,
+        ':customer'=> $customername, // cite: 4
+        ':TrasacBy'=> $user, // cite: 4
+        ':nhisno'  => $nhisno, // cite: 4
+        ':pprice'  => $purchaseprice,
+        ':unit_type' => $unit_type
+      ]);
+
+      echo json_encode(['status' => true]);
+    } else {
+      echo json_encode(['status' => false, 'errors' => $errors]); // cite: 4
+    }
+  }
+?>
+
+<?php
+  /* require 'Database.php';
+
+  if($_SERVER['REQUEST_METHOD'] == 'POST'){
+    session_start();
+    $errors = [];
     $success = [];
     $customername = htmlspecialchars($_POST['customername']);
     $dpt = htmlentities($_POST['dpt']);
@@ -84,5 +171,5 @@
         'success' => $success,
       ]);
     }
-  }
+  } */
 ?>

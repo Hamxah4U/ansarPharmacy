@@ -1,30 +1,196 @@
 <?php
-require 'Database.php';
-session_start();
+  require 'Database.php';
+  session_start();
 
-// START output buffering to prevent invalid JSON
-ob_start();
+  // START output buffering to prevent invalid JSON
+  ob_start();
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
+  $stmtUnits = $db->conn->query("SELECT id, unit_key, unit_label FROM unit_types_tbl ORDER BY id ASC");
+  $allUnitTypes = $stmtUnits->fetchAll(PDO::FETCH_ASSOC);
 
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
+
+      header('Content-Type: application/json');
+
+      try {
+          // Validate input safely
+          if (!isset($_POST['tid'], $_POST['new_qty'])) {
+              throw new Exception('Invalid request data');
+          }
+
+          $tid = intval($_POST['tid']);
+          $newQty = intval($_POST['new_qty']);
+
+          if ($newQty < 1) {
+              throw new Exception('Quantity must be at least 1');
+          }
+
+          // Get transaction
+          $stmt = $db->conn->prepare("
+              SELECT Price, Product, tDepartment, tCode 
+              FROM transaction_tbl 
+              WHERE TID = :tid AND Status = 'Not-Paid'
+          ");
+          $stmt->execute([':tid' => $tid]);
+          $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+
+          if (!$transaction) {
+              throw new Exception('Transaction not found or already paid');
+          }
+
+          // Check stock
+          $stmtStock = $db->conn->prepare("
+              SELECT Quantity 
+              FROM supply_tbl 
+              WHERE SupplyID = :product AND Department = :dept
+          ");
+          $stmtStock->execute([
+              ':product' => $transaction['Product'],
+              ':dept' => $transaction['tDepartment']
+          ]);
+
+          $stock = $stmtStock->fetch(PDO::FETCH_ASSOC);
+
+          if (!$stock) {
+              throw new Exception('Stock record not found');
+          }
+
+          if ($newQty > intval($stock['Quantity'])) {
+              throw new Exception('Insufficient stock! Available: ' . $stock['Quantity']);
+          }
+
+          // Calculate amount
+          $newAmount = $transaction['Price'] * $newQty;
+
+          // Update
+          $stmtUpdate = $db->conn->prepare("
+              UPDATE transaction_tbl 
+              SET qty = :qty, Amount = :amount 
+              WHERE TID = :tid
+          ");
+          $stmtUpdate->execute([
+              ':qty' => $newQty,
+              ':amount' => $newAmount,
+              ':tid' => $tid
+          ]);
+
+          // Get total
+          $stmtTotal = $db->conn->prepare("
+              SELECT SUM(Amount) as total 
+              FROM transaction_tbl 
+              WHERE tCode = :tCode AND Status = 'Not-Paid'
+          ");
+          $stmtTotal->execute([':tCode' => $transaction['tCode']]);
+
+          $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
+
+          // CLEAN buffer before output
+          ob_clean();
+
+          echo json_encode([
+              'status' => true,
+              'new_amount' => $newAmount,
+              'new_total' => $total['total'] ?? 0
+          ]);
+          exit;
+
+      } catch (Exception $e) {
+
+          // CLEAN buffer before output
+          ob_clean();
+
+          echo json_encode([
+              'status' => false,
+              'error' => $e->getMessage()
+          ]);
+          exit;
+      }
+  }
+
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_price') {
+      header('Content-Type: application/json');
+
+      try {
+          if (!isset($_POST['tid'], $_POST['new_price'])) {
+              throw new Exception('Invalid request data');
+          }
+
+          $tid = intval($_POST['tid']);
+          $newPrice = floatval($_POST['new_price']);
+
+          if ($newPrice < 0) {
+              throw new Exception('Price cannot be negative');
+          }
+
+          // Get current transaction
+          $stmt = $db->conn->prepare("
+              SELECT qty, tCode 
+              FROM transaction_tbl 
+              WHERE TID = :tid AND Status = 'Not-Paid'
+          ");
+          $stmt->execute([':tid' => $tid]);
+          $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+
+          if (!$transaction) {
+              throw new Exception('Transaction not found or already paid');
+          }
+
+          // Recalculate amount using existing quantity
+          $newAmount = $newPrice * intval($transaction['qty']);
+
+          // Update Price and Amount in database
+          $stmtUpdate = $db->conn->prepare("
+              UPDATE transaction_tbl 
+              SET Price = :price, Amount = :amount 
+              WHERE TID = :tid
+          ");
+          $stmtUpdate->execute([
+              ':price' => $newPrice,
+              ':amount' => $newAmount,
+              ':tid' => $tid
+          ]);
+
+          // Recalculate global total for unpaid items
+          $stmtTotal = $db->conn->prepare("
+              SELECT SUM(Amount) as total 
+              FROM transaction_tbl 
+              WHERE tCode = :tCode AND Status = 'Not-Paid'
+          ");
+          $stmtTotal->execute([':tCode' => $transaction['tCode']]);
+          $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
+
+          ob_clean();
+          echo json_encode([
+              'status' => true,
+              'new_amount' => $newAmount,
+              'new_total' => $total['total'] ?? 0
+          ]);
+          exit;
+
+      } catch (Exception $e) {
+          ob_clean();
+          echo json_encode([
+              'status' => false,
+              'error' => $e->getMessage()
+          ]);
+          exit;
+      }
+  }
+
+  /* if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_unit_type') {
     header('Content-Type: application/json');
 
     try {
-        // Validate input safely
-        if (!isset($_POST['tid'], $_POST['new_qty'])) {
+        if (!isset($_POST['tid'], $_POST['new_unit_type'])) {
             throw new Exception('Invalid request data');
         }
 
         $tid = intval($_POST['tid']);
-        $newQty = intval($_POST['new_qty']);
+        $newUnitType = trim($_POST['new_unit_type']);
 
-        if ($newQty < 1) {
-            throw new Exception('Quantity must be at least 1');
-        }
-
-        // Get transaction
+        // Check if transaction exists and is unpaid
         $stmt = $db->conn->prepare("
-            SELECT Price, Product, tDepartment, tCode 
+            SELECT TID 
             FROM transaction_tbl 
             WHERE TID = :tid AND Status = 'Not-Paid'
         ");
@@ -35,67 +201,126 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             throw new Exception('Transaction not found or already paid');
         }
 
-        // Check stock
-        $stmtStock = $db->conn->prepare("
-            SELECT Quantity 
-            FROM supply_tbl 
-            WHERE SupplyID = :product AND Department = :dept
-        ");
-        $stmtStock->execute([
-            ':product' => $transaction['Product'],
-            ':dept' => $transaction['tDepartment']
-        ]);
-
-        $stock = $stmtStock->fetch(PDO::FETCH_ASSOC);
-
-        if (!$stock) {
-            throw new Exception('Stock record not found');
-        }
-
-        if ($newQty > intval($stock['Quantity'])) {
-            throw new Exception('Insufficient stock! Available: ' . $stock['Quantity']);
-        }
-
-        // Calculate amount
-        $newAmount = $transaction['Price'] * $newQty;
-
-        // Update
+        // Update unit_type in transaction table
         $stmtUpdate = $db->conn->prepare("
             UPDATE transaction_tbl 
-            SET qty = :qty, Amount = :amount 
+            SET unit_type = :unit_type 
             WHERE TID = :tid
         ");
         $stmtUpdate->execute([
-            ':qty' => $newQty,
+            ':unit_type' => $newUnitType,
+            ':tid' => $tid
+        ]);
+
+        ob_clean();
+        echo json_encode([
+            'status' => true,
+            'message' => 'Unit type updated successfully'
+        ]);
+        exit;
+
+    } catch (Exception $e) {
+        ob_clean();
+        echo json_encode([
+            'status' => false,
+            'error' => $e->getMessage()
+        ]);
+        exit;
+    }
+  } */
+
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_unit_type') {
+    header('Content-Type: application/json');
+
+    try {
+        if (!isset($_POST['tid'], $_POST['new_unit_type'])) {
+            throw new Exception('Invalid request data');
+        }
+
+        $tid = intval($_POST['tid']);
+        $newUnitType = trim($_POST['new_unit_type']);
+
+        // 1. Fetch transaction details and current unit_key
+        $stmt = $db->conn->prepare("
+            SELECT t.TID, t.Product, t.qty, t.tCode, u.unit_key 
+            FROM transaction_tbl t
+            LEFT JOIN unit_types_tbl u ON u.id = :unit_id OR u.unit_key = :unit_key_input
+            WHERE t.TID = :tid AND t.Status = 'Not-Paid'
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':tid' => $tid,
+            ':unit_id' => $newUnitType,
+            ':unit_key_input' => $newUnitType
+        ]);
+        $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$transaction) {
+            throw new Exception('Transaction not found or already paid');
+        }
+
+        // 2. Fetch product prices from supply_tbl
+        $stmtPrice = $db->conn->prepare("
+            SELECT Price, Price AS full_price, half_price, quarter_price, pc_price 
+            FROM supply_tbl 
+            WHERE SupplyID = :product
+        ");
+        $stmtPrice->execute([':product' => $transaction['Product']]);
+        $prices = $stmtPrice->fetch(PDO::FETCH_ASSOC);
+
+        if (!$prices) {
+            throw new Exception('Product pricing data not found');
+        }
+
+        // 3. Determine new price based on unit key
+        $unitKey = strtolower($transaction['unit_key'] ?? $newUnitType);
+        $newPrice = floatval($prices['full_price'] ?? $prices['Price']);
+
+        if ($unitKey === 'half' && !empty($prices['half_price'])) {
+            $newPrice = floatval($prices['half_price']);
+        } elseif ($unitKey === 'quarter' && !empty($prices['quarter_price'])) {
+            $newPrice = floatval($prices['quarter_price']);
+        } elseif ($unitKey === 'pc' && !empty($prices['pc_price'])) {
+            $newPrice = floatval($prices['pc_price']);
+        }
+
+        // 4. Calculate total amount for this row
+        $qty = intval($transaction['qty']);
+        $newAmount = $newPrice * $qty;
+
+        // 5. Update transaction record with new unit, price, and amount
+        $stmtUpdate = $db->conn->prepare("
+            UPDATE transaction_tbl 
+            SET unit_type = :unit_type, Price = :price, Amount = :amount 
+            WHERE TID = :tid
+        ");
+        $stmtUpdate->execute([
+            ':unit_type' => $newUnitType,
+            ':price' => $newPrice,
             ':amount' => $newAmount,
             ':tid' => $tid
         ]);
 
-        // Get total
+        // 6. Calculate total for all unpaid items in transaction
         $stmtTotal = $db->conn->prepare("
             SELECT SUM(Amount) as total 
             FROM transaction_tbl 
             WHERE tCode = :tCode AND Status = 'Not-Paid'
         ");
         $stmtTotal->execute([':tCode' => $transaction['tCode']]);
-
         $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
 
-        // CLEAN buffer before output
         ob_clean();
-
         echo json_encode([
             'status' => true,
+            'new_price' => $newPrice,
             'new_amount' => $newAmount,
             'new_total' => $total['total'] ?? 0
         ]);
         exit;
 
     } catch (Exception $e) {
-
-        // CLEAN buffer before output
         ob_clean();
-
         echo json_encode([
             'status' => false,
             'error' => $e->getMessage()
@@ -105,410 +330,449 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 }
 ?>
 
-
 <?php if (!isset($_POST['action'])): ?>
-<style>
-  @media print {
+  <style>
+    @media print {
+      .page-break {
+        page-break-after: always;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #contentToPrint {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        line-height: 1.2;
+        width: 75mm ; 
+        white-space: nowrap; 
+        overflow: hidden; 
+      }
+
+      #contentToPrint table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      #contentToPrint table th,
+      #contentToPrint table td {
+        font-size: 10px;
+        text-align: left;
+        white-space: nowrap; 
+        word-wrap: break-word;
+      }
+    }
+
     .page-break {
       page-break-after: always;
     }
-
-    body {
-      margin: 0;
-      padding: 0;
+    
+    .quantity-input {
+      width: 70px;
+      padding: 5px;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      background-color: #fff !important;
+      display: inline-block !important;
     }
-
-    #contentToPrint {
-      font-family: Arial, sans-serif;
-      font-size: 10px;
-      line-height: 1.2;
-      width: 75mm ; 
-      white-space: nowrap; 
-      overflow: hidden; 
+    
+    .quantity-input:focus {
+      outline: none;
+      border-color: #4CAF50;
     }
-
-    #contentToPrint table {
+    
+    .quantity-input:enabled {
+      background-color: #fff;
+      cursor: text;
+    }
+    
+    .quantity-input:disabled {
+      background-color: #e9ecef;
+      cursor: not-allowed;
+    }
+    
+    .btn-warning {
+      background-color: #ffc107;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    
+    .btn-warning:hover {
+      background-color: #e0a800;
+    }
+    
+    .btn-danger {
+      background-color: #dc3545;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+    
+    .btn-dark {
+      background-color: #343a40;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      color: white;
+    }
+    
+    .btn-dark:hover {
+      background-color: #23272b;
+    }
+    
+    .updating-row {
+      opacity: 0.6;
+      background-color: #fff3cd;
+    }
+    
+    .table-responsive {
+      overflow-x: auto;
+    }
+    
+    .transaction-table {
       width: 100%;
       border-collapse: collapse;
     }
-
-    #contentToPrint table th,
-    #contentToPrint table td {
-      font-size: 10px;
+    
+    .transaction-table th,
+    .transaction-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
       text-align: left;
-      white-space: nowrap; 
-      word-wrap: break-word;
     }
-  }
-
-  .page-break {
-    page-break-after: always;
-  }
-  
-  .quantity-input {
-    width: 70px;
-    padding: 5px;
-    text-align: center;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    background-color: #fff !important;
-    display: inline-block !important;
-  }
-  
-  .quantity-input:focus {
-    outline: none;
-    border-color: #4CAF50;
-  }
-  
-  .quantity-input:enabled {
-    background-color: #fff;
-    cursor: text;
-  }
-  
-  .quantity-input:disabled {
-    background-color: #e9ecef;
-    cursor: not-allowed;
-  }
-  
-  .btn-warning {
-    background-color: #ffc107;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  
-  .btn-warning:hover {
-    background-color: #e0a800;
-  }
-  
-  .btn-danger {
-    background-color: #dc3545;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    color: white;
-  }
-  
-  .btn-danger:hover {
-    background-color: #c82333;
-  }
-  
-  .btn-dark {
-    background-color: #343a40;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    color: white;
-  }
-  
-  .btn-dark:hover {
-    background-color: #23272b;
-  }
-  
-  .updating-row {
-    opacity: 0.6;
-    background-color: #fff3cd;
-  }
-  
-  .table-responsive {
-    overflow-x: auto;
-  }
-  
-  .transaction-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .transaction-table th,
-  .transaction-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-  }
-</style>
+  </style>
 <?php endif; ?>
 
-
 <?php
+  // Regular request to display the table
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
+      $tCode = htmlspecialchars($_POST['tcode']);    
 
+      $sql = 'SELECT Customer AS pCustomer, ProductName, TID, tCode, transaction_tbl.Price AS Price, qty, unit_type, Amount, transaction_tbl.Status AS TStatus  
+        FROM transaction_tbl 
+        JOIN supply_tbl ON Product = supply_tbl.SupplyID 
+        WHERE tCode = :tCode';
 
-// Regular request to display the table
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
-    $tCode = htmlspecialchars($_POST['tcode']);    
+      $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
+      $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $sql = 'SELECT Customer AS pCustomer, ProductName, TID, tCode, transaction_tbl.Price AS Price, qty, Amount, transaction_tbl.Status AS TStatus  
-      FROM transaction_tbl 
-      JOIN supply_tbl ON Product = supply_tbl.SupplyID 
-      WHERE tCode = :tCode';
-
-    $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    if (!empty($products)): ?>
-      <div class="table-responsive">
-      <table class="transaction-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Description</th>
-            <th>Price (&#x20A6)</th>
-            <th>Qty</th>
-            <th>Amount (&#x20A6)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php $totalAmount = 0; ?>
-        <?php foreach ($products as $i => $row): ?>
-          <tr id="row_<?= $row['TID']; ?>" data-tid="<?= $row['TID']; ?>" data-price="<?= $row['Price']; ?>">
-            <td><?= $i + 1; ?></td>
-            <td><?= $row['ProductName']; ?></td>
-            <td><?= number_format($row['Price'], 2); ?></td>
-            <td class="qty-cell">
-              <?php if ($row['TStatus'] == 'Not-Paid'): ?>
-                <input type="number" 
-                       id="qty_<?= $row['TID']; ?>"
-                       class="quantity-input" 
-                       value="<?= $row['qty']; ?>" 
-                       min="1" 
-                       data-tid="<?= $row['TID']; ?>"
-                       data-old-qty="<?= $row['qty']; ?>"
-                       style="background-color: #fff; border: 1px solid #ccc; width: 70px; padding: 5px;">
-              <?php else: ?>
-                <span><?= $row['qty']; ?></span>
-              <?php endif; ?>
-             </td>
-            <td class="amount-cell" id="amount_<?= $row['TID']; ?>"><?= number_format($row['Amount'], 2); ?></td>
-            <td>
+      if (!empty($products)): ?>
+        <div class="table-responsive">
+        <table class="transaction-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th>Price (&#x20A6)</th>
+              <th>Qty</th>
+              <th>Type</th>
+               <th>Amount (&#x20A6)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php $totalAmount = 0; ?>
+          <?php foreach ($products as $i => $row): ?>
+            <tr id="row_<?= $row['TID']; ?>" data-tid="<?= $row['TID']; ?>" data-price="<?= $row['Price']; ?>">
+              <td><?= $i + 1; ?></td>
+              <td><?= $row['ProductName']; ?></td>
+              <td>
                 <?php if ($row['TStatus'] == 'Not-Paid'): ?>
-                  <button type="button" onclick="deleteProduct(<?= $row['TID']; ?>)" class="btn btn-warning">Delete</button>
+                  <input type="number" 
+                        id="price_<?= $row['TID']; ?>"
+                        class="quantity-input price-input" 
+                        value="<?= $row['Price']; ?>" 
+                        min="0"
+                        step="0.01" 
+                        data-tid="<?= $row['TID']; ?>"
+                        data-old-price="<?= $row['Price']; ?>"
+                        style="background-color: #fff; border: 1px solid #ccc; width: 85px; padding: 5px;">
                 <?php else: ?>
-                    <?= $row['TStatus']; ?>
+                  <span><?= number_format($row['Price']); ?></span>
                 <?php endif; ?>
-             </td>
-          </tr>
-          <?php $totalAmount += $row['Amount']; ?>
-        <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="5">
-              <?php 
-              // Check if any product is not paid to show validate button
-              $hasNotPaid = false;
-              foreach ($products as $row) {
-                  if ($row['TStatus'] == 'Not-Paid') {
-                      $hasNotPaid = true;
-                      break;
-                  }
-              }
-              if($hasNotPaid): ?>
-                <input type="button" onclick="validateTransaction('<?= $tCode; ?>')" class="btn btn-danger" value="Validate" />
-              <?php else: ?>
-                <!-- <input id="btn2" class="btn btn-dark" type="button" value="Print Receipt" onclick="PrintDoc2()" /><i class="fas fa-print"></i> -->
+              </td>
+              <td class="qty-cell">
+                <?php if ($row['TStatus'] == 'Not-Paid'): ?>
+                  <input type="number" 
+                        id="qty_<?= $row['TID']; ?>"
+                        class="quantity-input" 
+                        value="<?= $row['qty']; ?>" 
+                        min="1" 
+                        data-tid="<?= $row['TID']; ?>"
+                        data-old-qty="<?= $row['qty']; ?>"
+                        style="background-color: #fff; border: 1px solid #ccc; width: 70px; padding: 5px;">
+                <?php else: ?>
+                  <span><?= $row['qty']; ?></span>
+                <?php endif; ?>
+              </td>
+              <td class="unit-type-cell">
+                <?php if ($row['TStatus'] == 'Not-Paid'): ?>
+                  <select id="unit_type_<?= $row['TID']; ?>" 
+                          class="form-control form-control-sm unit-type-select" 
+                          data-tid="<?= $row['TID']; ?>" 
+                          data-old-unit="<?= $row['id'] ?? ''; ?>"
+                          style="width: 110px; padding: 3px 5px; height: 32px; background-color: #fff;">
+                    <?php foreach ($allUnitTypes as $ut): ?>
+                      <option value="<?= $ut['id']; ?>" <?= (isset($row['unit_type']) && $row['unit_type'] == $ut['id']) ? 'selected' : ''; ?>>
+                        <?= $ut['unit_label']; ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                <?php else: ?>
+                  <span>
+                    <?php 
+                      $label = $row['unit_type'] ?? '';
+                      foreach ($allUnitTypes as $ut) {
+                        if ($ut['unit_key'] == $row['unit_type']) {
+                          $label = $ut['unit_label'];
+                          break;
+                        }
+                      }
+                      echo htmlspecialchars($label);
+                    ?>
+                  </span>
+                <?php endif; ?>
+              </td>
+              <td class="amount-cell" id="amount_<?= $row['TID']; ?>"><?= number_format($row['Amount']); ?></td>
+              <td>
+                  <?php if ($row['TStatus'] == 'Not-Paid'): ?>
+                    <button type="button" onclick="deleteProduct(<?= $row['TID']; ?>)" class="btn btn-warning">Delete</button>
+                  <?php else: ?>
+                      <?= $row['TStatus']; ?>
+                  <?php endif; ?>
+              </td>
+            </tr>
+            <?php $totalAmount += $row['Amount']; ?>
+          <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5">
+                <?php 
+                // Check if any product is not paid to show validate button
+                $hasNotPaid = false;
+                foreach ($products as $row) {
+                    if ($row['TStatus'] == 'Not-Paid') {
+                        $hasNotPaid = true;
+                        break;
+                    }
+                }
+                if($hasNotPaid): ?>
+                  <input type="button" onclick="validateTransaction('<?= $tCode; ?>')" class="btn btn-danger" value="Validate" />
+                <?php else: ?>
+                  <!-- <input id="btn2" class="btn btn-dark" type="button" value="Print Receipt" onclick="PrintDoc2()" /><i class="fas fa-print"></i> -->
 
-                <button id="btnPrint" type="button" class="btn btn-info" onclick="PrintDoc2()"> <i class="fas fa-print"></i> Print Receipt </button>
-              <?php endif; ?>
-            </td>
-            <td colspan="1"><strong>Total Amount:</strong> <?= number_format($totalAmount, 2, '.', ','); ?></td>
-          </tr>
-        </tfoot>
-      </table>
-      </div>
-
-      <div id="not_paid" style="display: none;">
-        <div id="contentToPrint">
-          <?php
-            $sql = 'SELECT `department_tbl`.`Department` AS store, qty, Amount, ProductName, Product, Customer, TID, tCode, transaction_tbl.Price AS Price, transaction_tbl.Status AS TStatus,
-                           cash, transfer, pos
-                    FROM transaction_tbl
-                    JOIN supply_tbl ON Product = supply_tbl.SupplyID
-                    JOIN `department_tbl` ON `transaction_tbl`.`tDepartment` = `department_tbl`.`deptID`
-                    WHERE tCode = :tCode AND transaction_tbl.Status = "Paid"';
-
-            $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
-            $productsPaid = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            if(!empty($productsPaid)): 
-                // $storeName = "Your Store Name";
-                // $phone = "08012345678";
-                // $state = "Your State, Country";
-          ?>
-              <div id="printinvoice" style="page-break-after: always;">
-                <table style="width:100%; text-align:left">
-                  <tr>
-                    <td colspan="2" style="text-align:center; background-color:white">
-                      <strong style="margin: 0;"><?= $storeName ?></strong><br />
-                      <strong><?= $phone ?></strong><br />
-                      <strong style="font-size:8pt; margin: 0"><?= $state ?></strong><br />
-                      <strong style="margin-bottom: 0;">BILLING RECEIPT</strong>
-                      <br /> Customer's Copy
-                     </td>
-                  </tr>
-                  <tr>
-                    <td>TID:</td>
-                    <td id="tid"><?= $tCode; ?></td>
-                  </tr>
-                  <tr>
-                    <td>Customer:</td>
-                    <td id="patient"><?= htmlspecialchars($productsPaid[0]['Customer']) ?></td>
-                  </tr>
-                  <tr>
-                    <td colspan="2">
-                      <table id="transactionTable" style="width: 100%;">
-                        <thead>
-                          <tr>
-                            <th>Description</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <?php
-                                $totalAmountC = 0;
-                                foreach($productsPaid as $row) :?>
-                                <tr>
-                                  <td><?= $row['ProductName'] ?></td>
-                                  <td><?= $row['qty'] ?></td>
-                                  <td><?= number_format($row['Price']) ?></td>
-                                  <td><?= number_format($row['Amount']) ?></td>
-                                </tr>
-                              <?php $totalAmountC += $row['Amount'];
-                              endforeach ?>
-                                <tr>
-                                  <td colspan="3"><strong>Total:</strong></td>
-                                  <td colspan="1"><strong>&#8358;<?= number_format($totalAmountC, 2) ?></strong></td>
-                                </tr>
-                             <?php if(isset($productsPaid[0]['cash']) || isset($productsPaid[0]['transfer']) || isset($productsPaid[0]['pos'])): ?>
-                              <tr>
-                                <td colspan="4">
-                                    <strong>Payment:</strong><br>
-                                    Cash: ₦<?= number_format($productsPaid[0]['cash'] ?? 0, 2) ?> | 
-                                    Transfer: ₦<?= number_format($productsPaid[0]['transfer'] ?? 0, 2) ?> | 
-                                    POS: ₦<?= number_format($productsPaid[0]['pos'] ?? 0, 2) ?>
-                                 </td>
-                              </tr>
-                             <?php endif; ?>
-                        </tbody>
-                      </table>
-                      <div class="footer">
-                          <p style="margin: 0;">Printed By: <?= $_SESSION['fname']?>&nbsp; |&nbsp; Date: <?= date('d-M-Y h:i:s') ?></p>
-                          <p style="margin: 0;">Powered by: Tikvaah Tech Solutions</p>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-            <?php endif ?>
+                  <button id="btnPrint" type="button" class="btn btn-info" onclick="PrintDoc2()"> <i class="fas fa-print"></i> Print Receipt </button>
+                <?php endif; ?>
+              </td>
+              <td colspan="1"><strong>Total Amount:</strong> <?= number_format($totalAmount, 2, '.', ','); ?></td>
+            </tr>
+          </tfoot>
+        </table>
         </div>
-      </div>
 
-      <script>
-      // Bind change event to quantity inputs after the table is loaded
-      $(document).ready(function() {
-          $('.quantity-input').off('change').on('change', function() {
-              updateQuantity(this);
-          });
-          console.log('Quantity inputs found:', $('.quantity-input').length);
-      });
-      
-      function updateQuantity(element) {
-          console.log('updateQuantity called', element);
-          
-          const newQty = parseInt($(element).val());
-          const tid = $(element).data('tid');
-          const oldQty = parseInt($(element).data('old-qty'));
-          const row = $('#row_' + tid);
-          const price = parseFloat(row.data('price'));
-          
-          console.log('New Qty:', newQty, 'TID:', tid, 'Old Qty:', oldQty);
-          
-          // Validate quantity
-          if(isNaN(newQty) || newQty < 1) {
-              $(element).val(oldQty);
-              Swal.fire('Error', 'Quantity must be at least 1', 'error');
-              return;
-          }
-          
-          // Show loading state
-          row.addClass('updating-row');
-          $(element).prop('disabled', true);
-          
-          // Send AJAX request to update quantity
-          $.ajax({
-            //   url: window.location.href,
-                url: 'model/fetchTransactions.table2.php',
-              method: 'POST',
-              data: {
-                  action: 'update_quantity',
-                  tid: tid,
-                  new_qty: newQty
-              },
-              dataType: 'json',
-              success: function(response) {
-                  console.log('Response:', response);
-                  
-                  if(response.status) {
-                      // Update the amount in the row
-                      $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                      }));
-                      
-                      // Update the old quantity data attribute
-                      $(element).data('old-qty', newQty);
-                      $(element).attr('data-old-qty', newQty);
-                      
-                      // Update the total amount display
-                      const totalAmountDisplay = $('tfoot td:last-child');
-                      const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                      });
-                      totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
-                      
-                      // Show success
-                     /*  Swal.fire({
-                          icon: 'success',
-                          title: 'Updated!',
-                          text: 'Quantity updated successfully',
-                          timer: 1500,
-                          showConfirmButton: false
-                      }); */
-                      
-                      // Highlight the updated row
-                      row.css('backgroundColor', '#d4edda');
-                      setTimeout(() => {
-                          row.css('backgroundColor', '');
-                      }, 1000);
-                  } else {
-                      // Revert the quantity on error
-                      $(element).val(oldQty);
-                      Swal.fire('Error', response.error || 'Error updating quantity', 'error');
-                  }
-              },
-              error: function(xhr, status, error) {
-                console.error('RAW RESPONSE:', xhr.responseText);
+        <div id="not_paid" style="display: none;">
+          <div id="contentToPrint">
+            <?php
+              $sql = 'SELECT `department_tbl`.`Department` AS store, qty, Amount, ProductName, Product, Customer, TID, tCode, transaction_tbl.Price AS Price, transaction_tbl.Status AS TStatus,
+                            cash, transfer, pos
+                      FROM transaction_tbl
+                      JOIN supply_tbl ON Product = supply_tbl.SupplyID
+                      JOIN `department_tbl` ON `transaction_tbl`.`tDepartment` = `department_tbl`.`deptID`
+                      WHERE tCode = :tCode AND transaction_tbl.Status = "Paid"';
+
+              $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
+              $productsPaid = $stmt->fetchAll(PDO::FETCH_ASSOC);
+              if(!empty($productsPaid)): 
+                  // $storeName = "Your Store Name";
+                  // $phone = "08012345678";
+                  // $state = "Your State, Country";
+            ?>
+                <div id="printinvoice" style="page-break-after: always;">
+                  <table style="width:100%; text-align:left">
+                    <tr>
+                      <td colspan="2" style="text-align:center; background-color:white">
+                        <strong style="margin: 0;"><?= $storeName ?></strong><br />
+                        <strong><?= $phone ?></strong><br />
+                        <strong style="font-size:8pt; margin: 0"><?= $state ?></strong><br />
+                        <strong style="margin-bottom: 0;">BILLING RECEIPT</strong>
+                        <br /> Customer's Copy
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>TID:</td>
+                      <td id="tid"><?= $tCode; ?></td>
+                    </tr>
+                    <tr>
+                      <td>Customer:</td>
+                      <td id="patient"><?= htmlspecialchars($productsPaid[0]['Customer']) ?></td>
+                    </tr>
+                    <tr>
+                      <td colspan="2">
+                        <table id="transactionTable" style="width: 100%;">
+                          <thead>
+                            <tr>
+                              <th>Description</th>
+                              <th>Qty</th>
+                              <th>Price</th>
+                              <th>Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <?php
+                                  $totalAmountC = 0;
+                                  foreach($productsPaid as $row) :?>
+                                  <tr>
+                                    <td><?= $row['ProductName'] ?></td>
+                                    <td><?= $row['qty'] ?></td>
+                                    <td><?= number_format($row['Price']) ?></td>
+                                    <td><?= number_format($row['Amount']) ?></td>
+                                  </tr>
+                                <?php $totalAmountC += $row['Amount'];
+                                endforeach ?>
+                                  <tr>
+                                    <td colspan="3"><strong>Total:</strong></td>
+                                    <td colspan="1"><strong>&#8358;<?= number_format($totalAmountC, 2) ?></strong></td>
+                                  </tr>
+                              <?php if(isset($productsPaid[0]['cash']) || isset($productsPaid[0]['transfer']) || isset($productsPaid[0]['pos'])): ?>
+                                <tr>
+                                  <td colspan="4">
+                                      <strong>Payment:</strong><br>
+                                      Cash: ₦<?= number_format($productsPaid[0]['cash'] ?? 0, 2) ?> | 
+                                      Transfer: ₦<?= number_format($productsPaid[0]['transfer'] ?? 0, 2) ?> | 
+                                      POS: ₦<?= number_format($productsPaid[0]['pos'] ?? 0, 2) ?>
+                                  </td>
+                                </tr>
+                              <?php endif; ?>
+                          </tbody>
+                        </table>
+                        <div class="footer">
+                            <p style="margin: 0;">Printed By: <?= $_SESSION['fname']?>&nbsp; |&nbsp; Date: <?= date('d-M-Y h:i:s') ?></p>
+                            <p style="margin: 0;">Powered by: Tikvaah Tech Solutions</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              <?php endif ?>
+          </div>
+        </div>
+
+        <script>
+        // Bind change event to quantity inputs after the table is loaded
+        $(document).ready(function() {
+            $('.quantity-input').off('change').on('change', function() {
+                updateQuantity(this);
+            });
+            console.log('Quantity inputs found:', $('.quantity-input').length);
+        });
+        
+        function updateQuantity(element) {
+            console.log('updateQuantity called', element);
+            
+            const newQty = parseInt($(element).val());
+            const tid = $(element).data('tid');
+            const oldQty = parseInt($(element).data('old-qty'));
+            const row = $('#row_' + tid);
+            const price = parseFloat(row.data('price'));
+            
+            console.log('New Qty:', newQty, 'TID:', tid, 'Old Qty:', oldQty);
+            
+            // Validate quantity
+            if(isNaN(newQty) || newQty < 1) {
                 $(element).val(oldQty);
+                Swal.fire('Error', 'Quantity must be at least 1', 'error');
+                return;
+            }
+            
+            // Show loading state
+            row.addClass('updating-row');
+            $(element).prop('disabled', true);
+            
+            // Send AJAX request to update quantity
+            $.ajax({
+              //   url: window.location.href,
+                  url: 'model/fetchTransactions.table2.php',
+                method: 'POST',
+                data: {
+                    action: 'update_quantity',
+                    tid: tid,
+                    new_qty: newQty
+                },
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Response:', response);
+                    
+                    if(response.status) {
+                        // Update the amount in the row
+                        $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }));
+                        
+                        // Update the old quantity data attribute
+                        $(element).data('old-qty', newQty);
+                        $(element).attr('data-old-qty', newQty);
+                        
+                        // Update the total amount display
+                        const totalAmountDisplay = $('tfoot td:last-child');
+                        const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
+                        
+                        // Show success
+                      /*  Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: 'Quantity updated successfully',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }); */
+                        
+                        // Highlight the updated row
+                        row.css('backgroundColor', '#d4edda');
+                        setTimeout(() => {
+                            row.css('backgroundColor', '');
+                        }, 1000);
+                    } else {
+                        // Revert the quantity on error
+                        $(element).val(oldQty);
+                        Swal.fire('Error', response.error || 'Error updating quantity', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                  console.error('RAW RESPONSE:', xhr.responseText);
+                  $(element).val(oldQty);
 
-                // Swal.fire('Error', 'Server returned invalid response. Check console.', 'error');
-                Swal.fire('Error', xhr.responseText, 'error');
-              },
-              complete: function() {
-                  row.removeClass('updating-row');
-                  $(element).prop('disabled', false);
-              }
-          });
-      }
-      </script>
+                  // Swal.fire('Error', 'Server returned invalid response. Check console.', 'error');
+                  Swal.fire('Error', xhr.responseText, 'error');
+                },
+                complete: function() {
+                    row.removeClass('updating-row');
+                    $(element).prop('disabled', false);
+                }
+            });
+        }
+        </script>
 
-    <?php else: ?>
-      <div class="alert alert-info">No products added yet. Please add products to continue.</div>
-    <?php endif;
-}
+      <?php else: ?>
+        <div class="alert alert-info">No products added yet. Please add products to continue.</div>
+      <?php endif;
+  }
 ?>
 
 <script>
@@ -723,4 +987,213 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
       });
     }
   }  
+</script>
+
+<script>
+    $(document).ready(function() {
+      // Existing Qty Binding
+      $('.quantity-input:not(.price-input)').off('change').on('change', function() {
+          updateQuantity(this);
+      });
+
+      // New Price Binding
+      $('.price-input').off('change').on('change', function() {
+          updatePrice(this);
+      });
+  });
+
+  function updatePrice(element) {
+      const newPrice = parseFloat($(element).val());
+      const tid = $(element).data('tid');
+      const oldPrice = parseFloat($(element).data('old-price'));
+      const row = $('#row_' + tid);
+
+      if (isNaN(newPrice) || newPrice < 0) {
+          $(element).val(oldPrice);
+          Swal.fire('Error', 'Price must be 0 or greater', 'error');
+          return;
+      }
+
+      row.addClass('updating-row');
+      $(element).prop('disabled', true);
+
+      $.ajax({
+          url: 'model/fetchTransactions.table2.php',
+          method: 'POST',
+          data: {
+              action: 'update_price',
+              tid: tid,
+              new_price: newPrice
+          },
+          dataType: 'json',
+          success: function(response) {
+              if (response.status) {
+                  // Update dataset price on row for dynamic calculation
+                  row.data('price', newPrice);
+
+                  // Update row Amount text
+                  $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                  }));
+
+                  // Update old-price dataset attribute
+                  $(element).data('old-price', newPrice);
+                  $(element).attr('data-old-price', newPrice);
+
+                  // Update overall total display
+                  const totalAmountDisplay = $('tfoot td:last-child');
+                  const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                  });
+                  totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
+
+                  // Success visual effect
+                  row.css('backgroundColor', '#d4edda');
+                  setTimeout(() => {
+                      row.css('backgroundColor', '');
+                  }, 1000);
+              } else {
+                  $(element).val(oldPrice);
+                  Swal.fire('Error', response.error || 'Error updating price', 'error');
+              }
+          },
+          error: function(xhr) {
+              $(element).val(oldPrice);
+              Swal.fire('Error', xhr.responseText || 'Server communication error', 'error');
+          },
+          complete: function() {
+              row.removeClass('updating-row');
+              $(element).prop('disabled', false);
+          }
+      });
+  }
+</script>
+
+<script>
+  $(document).ready(function() {
+    // Existing bindings...
+    $('.quantity-input:not(.price-input)').off('change').on('change', function() {
+        updateQuantity(this);
+    });
+
+    $('.price-input').off('change').on('change', function() {
+        updatePrice(this);
+    });
+
+    // New Unit Type Binding
+    $('.unit-type-select').off('change').on('change', function() {
+        updateUnitType(this);
+    });
+});
+
+/* function updateUnitType(element) {
+    const newUnitType = $(element).val();
+    const tid = $(element).data('tid');
+    const oldUnit = $(element).data('old-unit');
+    const row = $('#row_' + tid);
+
+    row.addClass('updating-row');
+    $(element).prop('disabled', true);
+
+    $.ajax({
+        url: 'model/fetchTransactions.table2.php',
+        method: 'POST',
+        data: {
+            action: 'update_unit_type',
+            tid: tid,
+            new_unit_type: newUnitType
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status) {
+                // Update old-unit cache attribute
+                $(element).data('old-unit', newUnitType);
+                $(element).attr('data-old-unit', newUnitType);
+
+                // Highlight row feedback
+                row.css('backgroundColor', '#d4edda');
+                setTimeout(() => {
+                    row.css('backgroundColor', '');
+                }, 1000);
+            } else {
+                $(element).val(oldUnit);
+                Swal.fire('Error', response.error || 'Failed to update unit type', 'error');
+            }
+        },
+        error: function(xhr) {
+            $(element).val(oldUnit);
+            Swal.fire('Error', xhr.responseText || 'Server error updating unit type', 'error');
+        },
+        complete: function() {
+            row.removeClass('updating-row');
+            $(element).prop('disabled', false);
+        }
+    });
+} */
+
+function updateUnitType(element) {
+    const newUnitType = $(element).val();
+    const tid = $(element).data('tid');
+    const oldUnit = $(element).data('old-unit');
+    const row = $('#row_' + tid);
+
+    row.addClass('updating-row');
+    $(element).prop('disabled', true);
+
+    $.ajax({
+        url: 'model/fetchTransactions.table2.php',
+        method: 'POST',
+        data: {
+            action: 'update_unit_type',
+            tid: tid,
+            new_unit_type: newUnitType
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status) {
+                // Update cached unit attribute
+                $(element).data('old-unit', newUnitType);
+                $(element).attr('data-old-unit', newUnitType);
+
+                // Update Row Price field
+                $('#price_' + tid).val(parseFloat(response.new_price).toFixed(2));
+                $('#price_' + tid).data('old-price', response.new_price);
+                row.data('price', response.new_price);
+
+                // Update Row Amount text
+                $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }));
+
+                // Update Global Total text
+                const totalAmountDisplay = $('tfoot td:last-child');
+                const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
+
+                // Highlight updated row
+                row.css('backgroundColor', '#d4edda');
+                setTimeout(() => {
+                    row.css('backgroundColor', '');
+                }, 1000);
+            } else {
+                $(element).val(oldUnit);
+                Swal.fire('Error', response.error || 'Failed to update unit type', 'error');
+            }
+        },
+        error: function(xhr) {
+            $(element).val(oldUnit);
+            Swal.fire('Error', xhr.responseText || 'Server error updating unit type', 'error');
+        },
+        complete: function() {
+            row.removeClass('updating-row');
+            $(element).prop('disabled', false);
+        }
+    });
+}
 </script>

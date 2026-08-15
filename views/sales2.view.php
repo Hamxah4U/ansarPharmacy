@@ -59,11 +59,6 @@
           </a>
         </div>
 
-        <!-- <button type="button" onclick="switchCamera()" class="btn btn-secondary mt-2">
-                    Switch Camera
-                </button> -->
-        <!-- Transaction Header Form -->
-
         <form id="transactionHeaderForm">
           <div class="form-row">
             <div class="form-group col-md-6">
@@ -93,7 +88,7 @@
         <!-- Product Selection Row -->
         <div id="manualEntrySection">
           <div class="form-row">
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4">
               <label><strong>Store:</strong></label>
               <select name="dpt" class="form-control" id="storeSelect">
                 <option value="--choose--">--choose--</option>
@@ -109,12 +104,26 @@
               <small id="errorDpt" class="text-danger"></small>
             </div>
 
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4">
               <label><strong>Product:</strong></label>
               <select id="productSelect" class="form-control">
               </select>
               <small class="text-danger" id="errorService"></small>
             </div>
+            
+            <div class="form-group col-md-4">
+              <label><strong>Unit Type:</strong></label>
+              <select name="unit_type" id="unitTypeSelect" class="form-control">
+                <?php
+                  $stmtUnits = $db->conn->query("SELECT * FROM unit_types_tbl ORDER BY id ASC");
+                  while ($u = $stmtUnits->fetch(PDO::FETCH_ASSOC)) {
+                    echo '<option value="'.$u['id'].'">'.$u['unit_label'].'</option>';
+                  }
+                ?>
+              </select>
+              <small class="text-danger" id="errorService"></small>
+            </div>
+
           </div>
 
           <div class="form-row mb-3">
@@ -237,7 +246,187 @@ $(document).ready(function() {
   });
 
   // Load product details when product is selected
+
+  // Global variable to hold current active product's price tiers
+
+  // Variable to keep product prices cached in memory
+var activeProductPrices = null;
+
+// Independent helper function to update price based on selected unit
+function updateUnitPrice() {
+  if (!activeProductPrices) return;
+
+  var unitType = $('#unitTypeSelect').val(); // Returns ID string like "1", "2", etc.
+  var priceToSet = activeProductPrices.full_price;
+
+  // Replace '2', '3', '4' with the actual IDs from your unit_types_tbl database table
+  if (unitType == '2' || unitType === 'half') {
+    priceToSet = activeProductPrices.half_price;
+  } else if (unitType == '3' || unitType === 'quarter') {
+    priceToSet = activeProductPrices.quarter_price;
+  } else if (unitType == '4' || unitType === 'pc') {
+    priceToSet = activeProductPrices.pc_price;
+  }
+
+  // Fallback if price value is missing/null from response
+  priceToSet = priceToSet || activeProductPrices.full_price;
+
+  $("#price").val(parseFloat(priceToSet).toFixed());
+}
+
+$(document).ready(function() {
+  // 1. Initialize Select2 on inputs
+  $('#storeSelect').select2({
+    theme: 'bootstrap-4',
+    placeholder: '--choose--',
+    allowClear: true
+  });
+
+  $('#productSelect').select2({
+    theme: 'bootstrap-4',
+    placeholder: '--choose--',
+    allowClear: true
+  });
+
+  $('#unitTypeSelect').select2({
+    theme: 'bootstrap-4',
+    placeholder: '--choose--',
+    allowClear: true
+  });
+
+  // 2. Refresh Table
+  refreshTransactionTable();
+
+  // 3. Store change handler
+  $('#storeSelect').on('change', function() {
+    const deptID = $(this).val();
+    if (deptID !== "--choose--" && deptID !== "" && deptID !== null) {
+      $.ajax({
+        url: "model/product.ajax.php",
+        type: "POST",
+        data: { department_id: deptID },
+        success: function(response) {
+          $("#productSelect").html(response).trigger('change');
+        }
+      });
+    } else {
+      $("#productSelect").html('<option value="">--choose--</option>').trigger('change');
+    }
+    resetProductFields();
+  });
+
+  // 4. Unit Type change handler (Catches both standard select & Select2 events)
+  $(document).on('change', '#unitTypeSelect', function() {
+    updateUnitPrice();
+  });
+
+  // 5. Product change handler
   $('#productSelect').on('change', function() {
+    const productID = $(this).val();
+    if (productID !== "" && productID !== "--select product--" && productID !== null) {
+      $.ajax({
+        url: "model/price.ajax.php",
+        type: "POST",
+        data: {
+          product_id: productID,
+          department_id: $('#storeSelect').val()
+        },
+        dataType: 'json',
+        success: function(response) {
+          if (response.status || response.full_price !== undefined) {
+            // Save pricing breakdown globally
+            activeProductPrices = response;
+
+            // Reset unit selection to 'full'
+            $('#unitTypeSelect').val('full').trigger('change.select2');
+
+            // Fill stock & purchase details
+            $("#stockQty").val(response.quantity);
+            $('#purchaseprice').val(response.purchaprice);
+
+            // Compute initial price
+            updateUnitPrice();
+          }
+        },
+        error: function() {
+          activeProductPrices = null;
+          resetProductFields();
+        }
+      });
+    } else {
+      activeProductPrices = null;
+      resetProductFields();
+    }
+  });
+
+});
+
+  /* let activeProductPrices = null;
+
+  // Function to update the price based on unit type selection
+  function updateUnitPrice() {
+    if (!activeProductPrices) return;
+
+    const unitType = $('#unitTypeSelect').val();
+    let priceToSet = activeProductPrices.full_price;
+
+    if (unitType === 'half') {
+      priceToSet = activeProductPrices.half_price;
+    } else if (unitType === 'quarter') {
+      priceToSet = activeProductPrices.quarter_price;
+    } else if (unitType === 'pc') {
+      priceToSet = activeProductPrices.pc_price;
+    }
+
+    // Update price input with 2 decimal places
+    $("#price").val(parseFloat(priceToSet).toFixed(2));
+  } */
+
+  // 1. Trigger when Unit Type changes
+  $('#unitTypeSelect').on('change', function() {
+    updateUnitPrice();
+  });
+
+  // 2. Trigger when Product changes
+  $('#productSelect').on('change', function() {
+    const productID = $(this).val();
+    if (productID !== "" && productID !== "--select product--" && productID !== null) {
+      $.ajax({
+        url: "model/price.ajax.php",
+        type: "POST",
+        data: {
+          product_id: productID,
+          department_id: $('#storeSelect').val()
+        },
+        dataType: 'json',
+        success: function(response) {
+          // Store response globally
+          activeProductPrices = response;
+
+          // Reset unit dropdown to 'full' by default on product selection
+          $('#unitTypeSelect').val('full');
+
+          // Set quantity & purchase price
+          $("#stockQty").val(response.quantity);
+          $('#purchaseprice').val(response.purchaprice);
+
+          // Update price box based on unit type
+          updateUnitPrice();
+        },
+        error: function() {
+          activeProductPrices = null;
+          $("#price").val('');
+          $("#stockQty").val('');
+        }
+      });
+    } else {
+      activeProductPrices = null;
+      resetProductFields();
+    }
+  });
+
+
+  /* $('#productSelect').on('change', function() {
     const productID = $(this).val();
     if (productID !== "" && productID !== "--select product--" && productID !== null) {
       $.ajax({
@@ -261,7 +450,7 @@ $(document).ready(function() {
     } else {
       resetProductFields();
     }
-  });
+  }); */
 }); // <--- END OF DOCUMENT READY FOR INITIALIZATION
 
 // MOVE ALL GLOBAL FUNCTIONS OUTSIDE SO THE BUTTONS CAN SEE THEM
@@ -326,6 +515,7 @@ function addProductToTable() {
       customername: customerName,
       dpt: department,
       product: productID,
+      unit_type: $('#unitTypeSelect').val(),
       cprice: price,
       qty: stockQty,
       issuedqty: issuedQty,

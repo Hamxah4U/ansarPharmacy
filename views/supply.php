@@ -111,11 +111,9 @@
 						<input class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
 						<small class="text-danger" id="errorProductCode"></small>
 					</div> -->
-						<input hidden class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
-					
-					
+					<input hidden class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
 
-          			<div class="form-group">
+          <div class="form-group">
 						<label for="">Quantity <?= $placeholder ?></label>
 						<input class="form-control" type="number" id="qty" name="qty" placeholder="Enter total quantity">
 						<small class="text-danger" id="errorQty"></small>

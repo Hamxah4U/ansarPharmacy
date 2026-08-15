@@ -133,12 +133,13 @@
 											$('#errorUnit, #errorProduct, #errorF, #errorS').text('');
 											let totalAmount = 0;
 											let table = '<table class="table table-bordered table-striped">';
-											table += '<thead><tr><th>#</th><th>User</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th></tr></thead>';
+											table += '<thead><tr><th>#</th><th>Customer</th><th>Seller</th><th>Code</th><th>Product</th><th>Price</th><th>Qty</th><th>Amount</th><th>Customer</th><th>Date</th><th>Time</th><th>Action</th></tr></thead>';
 											table += '<tbody>';
 											response.transactions.forEach((row, index) => {
 													totalAmount += parseFloat(row.Amount);  // Sum the amount
 													table += `<tr>
 															<td>${index + 1}</td>
+															<td>${row.Customer}</td>
 															<td>${row.userfullname}</td>															
 															<td>${row.tCode}</td>															
 															<td>${row.dproduct}</td>
@@ -148,7 +149,7 @@
 															<td>${row.Customer}</td>
 															<td>${row.TransacDate}</td>
 															<td>${row.TransacTime}</td>
-															
+															<td><button class='btn btn-primary'>Reseipt</button></td>
 													</tr>`;
 											});
 											table += '</tbody></table>';

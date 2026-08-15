@@ -29,7 +29,7 @@
     }
 
     $db = new Database();
-    $storeName = 'MAI RABO PATENT MEDICINE AND COSMETICS STORE';
+    $storeName = 'MAI RABO PATENT MEDICINE';
     $subhead = 'GLOBAL SERVICE LTD';
     $state = 'Address: GRA, Bauchi, Bauchi State';
     $phone = '08028289235';

@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Query for transactions
     $sql = "SELECT `u`.`Fullname` AS `userfullname`, `supply_tbl`.`ProductName` as dproduct, t.TID, t.tCode, d.Department AS Unit, p.Productname AS Product,
                    t.Price, t.qty, t.Amount, t.Customer, t.TransacDate, t.TransacTime, 
-                   t.TrasacBy, t.Status
+                   t.TrasacBy, t.Status, Customer
             FROM transaction_tbl t
             JOIN department_tbl d ON t.tDepartment = d.deptID
             LEFT JOIN product_tbl p ON t.Product = p.proID

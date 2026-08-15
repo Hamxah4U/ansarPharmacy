@@ -1,3 +1,3 @@
 @echo off
 cd C:\ansar
-start /B php -S 192.168.0.100:500
+start /B php -S localhost:500
