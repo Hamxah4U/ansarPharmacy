@@ -74,7 +74,7 @@
         ':customer'=> $customername, // cite: 4
         ':TrasacBy'=> $user, // cite: 4
         ':nhisno'  => $nhisno, // cite: 4
-        ':pprice'  => $purchaseprice,
+        ':pprice'  => $row['Pprice'], //$purchaseprice,
         ':unit_type' => $unit_type
       ]);
 
