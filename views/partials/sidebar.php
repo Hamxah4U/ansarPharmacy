@@ -53,10 +53,16 @@ strong {
                 </li> -->
 
   <!-- <li class="nav-item active">
-                    <a class="nav-link" href="/servicebilling">
-                        <i class="fas fa-warehouse"></i>
-                       <strong>Wholesale Sales</strong></a>
-                </li> -->
+    <a class="nav-link" href="/servicebilling">
+      <i class="fas fa-warehouse"></i>
+      <strong>Wholesale</strong></a>
+  </li> -->
+
+  <li class="nav-item active">
+    <a class="nav-link" href="/wholesale">
+      <i class="fas fa-warehouse"></i>
+      <strong>Wholesale</strong></a>
+  </li>
 
 
   <li class="nav-item active">
@@ -139,16 +145,22 @@ strong {
 
 
   <?php else: ?>
-  <li class="nav-item active">
+  <!--  <li class="nav-item active">
     <a class="nav-link" href="/billing">
       <i class="fas fa-money-bill"></i>
       <strong>Retailes</strong></a>
+  </li> -->
+
+  <li class="nav-item active">
+    <a class="nav-link" href="/retails">
+      <i class="fas fa-shopping-cart"></i>
+      <strong>Retail Sales</strong></a>
   </li>
 
   <li class="nav-item active">
     <a class="nav-link" href="/servicebilling">
       <i class="fas fa-file-invoice-dollar"></i>
-      <strong>Wholesales</strong></a>
+      <strong>Wholesales__</strong></a>
   </li>
 
   <li class="nav-item">
@@ -174,6 +186,12 @@ strong {
     <a class="nav-link" href="/inventoryreport">
       <i class="fas fa-search"></i>
       <strong>Inventory Report</strong></a>
+  </li>
+  <li class="nav-item active">
+    <a class="nav-link" href="report">
+      <i class="fas fa-file-invoice-dollar"></i>
+      <strong>Sales Reports</strong>
+    </a>
   </li>
 
   <?php endif; ?>

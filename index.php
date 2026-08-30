@@ -12,7 +12,8 @@ if(!isset($_SESSION['userID']) &&
   $uri != '/diary' &&
   $uri != '/wallet' &&
   $uri != '/sales2' &&
-  $uri != '/inventory-reconciliation'
+  $uri != '/inventory-reconciliation' &&
+  $uri != '/wholesale'
   
   ) {
   header('Location: /');
@@ -49,6 +50,7 @@ $routes = [
   '/retails' => 'controllers/sales2.php',
   '/inventory-reconciliation' => 'controllers/reconciliation.php',
   '/log_history' => 'controllers/log_history.php',
+  '/wholesale' => 'controllers/wholesale.php'
 ];
 
 if(array_key_exists($uri, $routes)) {

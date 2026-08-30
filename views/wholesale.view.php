@@ -45,7 +45,7 @@
       <div class="container-fluid">
         <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-          <h1 class="h3 mb-0 text-danger">Retails Dashboard</h1>
+          <h1 class="h3 mb-0 text-danger">WHOLESALES DASHBOARD</h1>
              <div class="row mb-3">
           <div class="col-md-12 text-center">
             <button type="button" id="btnToggleInput" class="btn btn-primary" onclick="handleInputToggle()"
@@ -256,10 +256,10 @@ var activeProductPrices = null;
 function updateUnitPrice() {
   if (!activeProductPrices) return;
 
-  var unitType = $('#unitTypeSelect').val(); // Returns ID string like "1", "2", etc.
-  var priceToSet = activeProductPrices.retail_price;
+  var unitType = $('#unitTypeSelect').val();
+  var priceToSet = activeProductPrices.full_price; // Sets wholesale full price directly
 
-  // Replace '2', '3', '4' with the actual IDs from your unit_types_tbl database table
+  // Handle tier fractions if unit options are toggled
   if (unitType == '2' || unitType === 'half') {
     priceToSet = activeProductPrices.half_price;
   } else if (unitType == '3' || unitType === 'quarter') {
@@ -268,8 +268,8 @@ function updateUnitPrice() {
     priceToSet = activeProductPrices.pc_price;
   }
 
-  // Fallback if price value is missing/null from response
-  priceToSet = priceToSet || activeProductPrices.retail_price;
+  // Fallback check
+  priceToSet = priceToSet || activeProductPrices.wholesaleprice;
 
   $("#price").val(parseFloat(priceToSet).toFixed());
 }
@@ -333,7 +333,7 @@ $(document).ready(function() {
         },
         dataType: 'json',
         success: function(response) {
-          if (response.status || response.retail_price !== undefined) {
+          if (response.status || response.full_price !== undefined) {
             // Save pricing breakdown globally
             activeProductPrices = response;
 
@@ -507,7 +507,7 @@ function addProductToTable() {
   if (hasError) return;
 
   $.ajax({
-    url: 'model/product.transac.php',
+    url: 'model/product.transac2.php',
     dataType: 'json',
     type: 'POST',
     data: {

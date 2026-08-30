@@ -208,6 +208,7 @@ $(document).ready(function () {
                                 <td>${item.TransacDate}</td>
                                 <td>${item.TransacTime}</td>
                                 <td>
+                                    <?php if ($_SESSION['super_role'] == 'super admin'): ?>
                                     <button class="btn btn-sm btn-info edit-trans-btn" 
                                             data-tid="${item.TID}" 
                                             data-product="${item.dproduct}" 
@@ -216,9 +217,12 @@ $(document).ready(function () {
                                         Edit <span class="fas fa-edit"></span>
                                     </button>
 
-																		<button class="btn btn-sm btn-danger return-trans-btn" 
-																			data-tid="${item.TID}" data-product="${item.dproduct}" 
-																			data-price="${item.Price}" data-qty="${item.qty}">Return</button>
+                                    <button class="btn btn-sm btn-danger return-trans-btn" 
+                                        data-tid="${item.TID}" data-product="${item.dproduct}" 
+                                        data-price="${item.Price}" data-qty="${item.qty}">Return</button>
+                                    <?php else: ?>
+                                    <span>No Action</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>`;
                         });

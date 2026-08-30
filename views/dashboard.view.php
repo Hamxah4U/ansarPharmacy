@@ -4,13 +4,13 @@
     require 'model/Database.php';
 
 
-    $dailysql = $db->query("SELECT 
+    /* $dailysql = $db->query("SELECT 
             SUM(Amount) AS ttamount, 
             COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS dcash, 
             COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS dpos, 
             COALESCE(SUM(CAST(transfer AS DECIMAL(10,2))), 0) AS dtransfer 
         FROM transaction_tbl 
-        WHERE `Status` = 'Paid' 
+        WHERE (`Status` = 'Paid' OR `Status` = 'Returned') 
         AND DATE(TransacDate) = CURRENT_DATE() 
         AND TID IN (
             SELECT MIN(TID) 
@@ -19,15 +19,163 @@
             GROUP BY tCode
         )"
     );
+ */
+
+    $dailysql = $db->query("SELECT 
+            SUM(ttamount) AS ttamount,
+            COALESCE(SUM(dcash), 0) AS dcash,
+            COALESCE(SUM(dpos), 0) AS dpos,
+            COALESCE(SUM(dtransfer), 0) AS dtransfer
+        FROM (
+            -- 1. Original sales: Pick MIN(TID) per tCode to avoid duplicate cash/pos/transfer sums
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                CAST(cash AS DECIMAL(10,2)) AS dcash, 
+                CAST(pos AS DECIMAL(10,2)) AS dpos, 
+                CAST(transfer AS DECIMAL(10,2)) AS dtransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Paid' 
+            AND DATE(TransacDate) = CURRENT_DATE() 
+            AND TID IN (
+                SELECT MIN(TID) 
+                FROM transaction_tbl 
+                WHERE DATE(TransacDate) = CURRENT_DATE() AND Status = 'Paid'
+                GROUP BY tCode
+            )
+            GROUP BY tCode
+
+            UNION ALL
+
+            -- 2. Returned items: Sum all negative return rows directly
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                SUM(CAST(cash AS DECIMAL(10,2))) AS dcash, 
+                SUM(CAST(pos AS DECIMAL(10,2))) AS dpos, 
+                SUM(CAST(transfer AS DECIMAL(10,2))) AS dtransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Returned' 
+            AND DATE(TransacDate) = CURRENT_DATE()
+        ) AS combined_summary
+    ");
+
+
     $dailyRow = $dailysql->fetch(PDO::FETCH_ASSOC);
 
-    $monthlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS mcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS mpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS mtransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    /* $monthlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS mcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS mpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS mtransfer 
+        FROM transaction_tbl
+        WHERE (`Status` = 'Paid' OR `Status` = 'Returned') AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE MONTH(TransacDate) = MONTH(CURRENT_DATE()) AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    $monthlyRow = $monthlysql->fetch(PDO::FETCH_ASSOC); */
+    $monthlysql = $db->query("SELECT 
+            SUM(ttamount) AS ttamount,
+            COALESCE(SUM(mcash), 0) AS mcash,
+            COALESCE(SUM(mpos), 0) AS mpos,
+            COALESCE(SUM(mtransfer), 0) AS mtransfer
+        FROM (
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                CAST(cash AS DECIMAL(10,2)) AS mcash, 
+                CAST(pos AS DECIMAL(10,2)) AS mpos, 
+                CAST(transfer AS DECIMAL(10,2)) AS mtransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Paid' 
+            AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) 
+            AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) 
+            AND TID IN (
+                SELECT MIN(TID) 
+                FROM transaction_tbl 
+                WHERE MONTH(TransacDate) = MONTH(CURRENT_DATE()) 
+                    AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) 
+                    AND Status = 'Paid'
+                GROUP BY tCode
+            )
+            GROUP BY tCode
+
+            UNION ALL
+
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                SUM(CAST(cash AS DECIMAL(10,2))) AS mcash, 
+                SUM(CAST(pos AS DECIMAL(10,2))) AS mpos, 
+                SUM(CAST(transfer AS DECIMAL(10,2))) AS mtransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Returned' 
+            AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) 
+            AND YEAR(TransacDate) = YEAR(CURRENT_DATE())
+        ) AS combined_monthly
+    ");
     $monthlyRow = $monthlysql->fetch(PDO::FETCH_ASSOC);
 
-    $yearlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS ycash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS ypos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ytransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    // $yearlysql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS ycash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS ypos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ytransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) AND TID IN ( SELECT MIN(TID) FROM transaction_tbl WHERE YEAR(TransacDate) = YEAR(CURRENT_DATE()) GROUP BY tCode, TransacDate )");
+    $yearlysql = $db->query("SELECT 
+            SUM(ttamount) AS ttamount,
+            COALESCE(SUM(ycash), 0) AS ycash,
+            COALESCE(SUM(ypos), 0) AS ypos,
+            COALESCE(SUM(ytransfer), 0) AS ytransfer
+        FROM (
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                CAST(cash AS DECIMAL(10,2)) AS ycash, 
+                CAST(pos AS DECIMAL(10,2)) AS ypos, 
+                CAST(transfer AS DECIMAL(10,2)) AS ytransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Paid' 
+            AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) 
+            AND TID IN (
+                SELECT MIN(TID) 
+                FROM transaction_tbl 
+                WHERE YEAR(TransacDate) = YEAR(CURRENT_DATE()) 
+                    AND Status = 'Paid'
+                GROUP BY tCode
+            )
+            GROUP BY tCode
+
+            UNION ALL
+
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                SUM(CAST(cash AS DECIMAL(10,2))) AS ycash, 
+                SUM(CAST(pos AS DECIMAL(10,2))) AS ypos, 
+                SUM(CAST(transfer AS DECIMAL(10,2))) AS ytransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Returned' 
+            AND YEAR(TransacDate) = YEAR(CURRENT_DATE())
+        ) AS combined_yearly
+    ");
     $yearlyrow = $yearlysql->fetch(PDO::FETCH_ASSOC);
 
-    $totalsql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS tcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS tpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ttransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND TID IN ( SELECT MIN(TID) FROM transaction_tbl GROUP BY tCode, TransacDate )");
+    // $totalsql = $db->query("SELECT SUM(Amount) AS ttamount, COALESCE(SUM(CAST(cash AS DECIMAL(10,2))), 0) AS tcash, COALESCE(SUM(CAST(pos AS DECIMAL(10,2))), 0) AS tpos, COALESCE(SUM(CAST(`transfer` AS DECIMAL(10,2))), 0) AS ttransfer FROM transaction_tbl WHERE `Status` = 'Paid' AND TID IN ( SELECT MIN(TID) FROM transaction_tbl GROUP BY tCode, TransacDate )");
+    $totalsql = $db->query("SELECT 
+            SUM(ttamount) AS ttamount,
+            COALESCE(SUM(tcash), 0) AS tcash,
+            COALESCE(SUM(tpos), 0) AS tpos,
+            COALESCE(SUM(ttransfer), 0) AS ttransfer
+        FROM (
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                CAST(cash AS DECIMAL(10,2)) AS tcash, 
+                CAST(pos AS DECIMAL(10,2)) AS tpos, 
+                CAST(transfer AS DECIMAL(10,2)) AS ttransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Paid' 
+            AND TID IN (
+                SELECT MIN(TID) 
+                FROM transaction_tbl 
+                WHERE Status = 'Paid'
+                GROUP BY tCode
+            )
+            GROUP BY tCode
+
+            UNION ALL
+
+            SELECT 
+                SUM(Amount) AS ttamount, 
+                SUM(CAST(cash AS DECIMAL(10,2))) AS tcash, 
+                SUM(CAST(pos AS DECIMAL(10,2))) AS tpos, 
+                SUM(CAST(transfer AS DECIMAL(10,2))) AS ttransfer
+            FROM transaction_tbl 
+            WHERE Status = 'Returned'
+        ) AS combined_total
+    ");
     $totalrow = $totalsql->fetch(PDO::FETCH_ASSOC);
 
 ?>
@@ -74,7 +222,7 @@
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Earnings (Daily)</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                             <?php
-                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`))  AS `dailyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" AND DATE(`TransacDate`) = CURRENT_DATE');
+                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`))  AS `dailyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" AND DATE(`TransacDate`) = CURRENT_DATE');
                                                 $daily = $stmt->fetch(PDO::FETCH_ASSOC);
                                                 $amount = $daily['dailyTotal'] ?? '0';
                                                 echo number_format($amount, 2, '.', ',');
@@ -98,7 +246,7 @@
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Earnings (Monthly)</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                             <?php
-                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `monthlyTotal` FROM `transaction_tbl`WHERE `Status` = "Paid" AND MONTH(`TransacDate`) = MONTH(CURRENT_DATE) AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
+                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `monthlyTotal` FROM `transaction_tbl`WHERE `Status` = "Paid" OR `Status` = "Returned" AND MONTH(`TransacDate`) = MONTH(CURRENT_DATE) AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
                                                 $monthly = $stmt->fetch(PDO::FETCH_ASSOC);
                                                 echo number_format($monthly['monthlyTotal'], 2, '.', ',');
                                             ?>
@@ -123,7 +271,7 @@
                                                 <div class="col-auto">
                                                     <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
                                                     <?php
-                                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `yearlyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
+                                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `yearlyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
                                                         $yearlyTotal = $stmt->fetch(PDO::FETCH_ASSOC);
                                                         echo number_format($yearlyTotal['yearlyTotal'], 2, '.', ',');
                                                     ?>
@@ -148,7 +296,7 @@
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">
                                     <?php
-                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `totalTransaction` FROM `transaction_tbl` WHERE `Status` = "Paid"');
+                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `totalTransaction` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" ');
                                         $total = $stmt->fetch(PDO::FETCH_ASSOC);
                                         echo number_format($total['totalTransaction'], '2', '.', ',');
                                     ?>
@@ -176,7 +324,7 @@
                                             <?php
                                                 $stmtd = $db->query("SELECT SUM(COALESCE(`profit`, 0)) AS dprofit 
                                                 FROM `transaction_tbl` 
-                                                WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Paid' OR `Status` = 'Credit') 
+                                                WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Returned' OR `Status` = 'Paid' OR `Status` = 'Credit') 
                                                 AND DATE(`TransacDate`) = CURRENT_DATE()
                                             ");
                                                 $dprofit = $stmtd->fetch(PDO::FETCH_ASSOC);
@@ -204,7 +352,7 @@
                                             <?php
                                                 $stmtm = $db->query("SELECT SUM(COALESCE(`profit`, 0)) AS mprofit 
                                                 FROM `transaction_tbl` 
-                                                WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Paid' OR `Status` = 'Credit') 
+                                                WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Returned' OR `Status` = 'Paid' OR `Status` = 'Credit') 
                                                 AND MONTH(`TransacDate`) = MONTH(CURRENT_DATE()) 
                                                 AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE())
                                             ");
@@ -235,7 +383,7 @@
                                                     <?php
                                                         $stmty = $db->query("SELECT SUM(COALESCE(`profit`, 0)) AS yprofit 
                                                         FROM `transaction_tbl` 
-                                                        WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Paid' OR `Status` = 'Credit') 
+                                                        WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Returned' OR `Status` = 'Paid' OR `Status` = 'Credit') 
                                                         AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE())
                                                     ");
                                                         $yprofit = $stmty->fetch(PDO::FETCH_ASSOC);
@@ -264,7 +412,7 @@
                                     <?php
                                         $stmttt = $db->query(" SELECT SUM(COALESCE(`profit`, 0)) AS ttprofit 
                                         FROM `transaction_tbl` 
-                                        WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Paid' OR `Status` = 'Credit')
+                                        WHERE `pprice` IS NOT NULL AND `pprice_amount` IS NOT NULL AND (`Status` = 'Returned' OR `Status` = 'Paid' OR `Status` = 'Credit')
                                     ");
                                         $ttprofit = $stmttt->fetch(PDO::FETCH_ASSOC);
                                         echo number_format($ttprofit['ttprofit'], 2);

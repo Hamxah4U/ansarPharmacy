@@ -1,5 +1,46 @@
 <?php
-  if (isset($_POST['product_id'])) {
+if (isset($_POST['product_id'])) {
+    require 'Database.php';
+
+    $productID = $_POST['product_id'];
+
+    $stmt = $db->conn->prepare("SELECT pcs_per_unit, Price, half_price, quarter_price, pc_price, Quantity, Pprice, wholesaleprice FROM supply_tbl WHERE SupplyID = :productID LIMIT 1");
+    $stmt->execute(['productID' => $productID]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($product) {
+        $pcsPerUnit   = !empty($product['pcs_per_unit']) ? (int)$product['pcs_per_unit'] : 1;
+        $wholesaleVal = floatval($product['wholesaleprice']); // Standard wholesale price from DB
+        $retailVal    = floatval($product['Price']);
+
+        // Use wholesale price as full_price base for wholesale module
+        $halfPrice    = !empty($product['half_price']) ? floatval($product['half_price']) : ($wholesaleVal / 2);
+        $quarterPrice = !empty($product['quarter_price']) ? floatval($product['quarter_price']) : ($wholesaleVal / 4);
+        $pcPrice      = !empty($product['pc_price']) ? floatval($product['pc_price']) : ($wholesaleVal / $pcsPerUnit);
+
+        $qty         = $product['Quantity'];
+        $current_qty = $qty / $pcsPerUnit;
+
+        echo json_encode([
+            'status'         => true,
+            'full_price'     => $wholesaleVal, // <--- Set wholesale price here
+            'retail_price'   => $retailVal,
+            'half_price'     => $halfPrice,
+            'quarter_price'  => $quarterPrice,
+            'pc_price'       => $pcPrice,
+            'pcs_per_unit'   => $pcsPerUnit,
+            'stock_pcs'      => (int)$product['Quantity'],
+            'purchaprice'    => $product['Pprice'],
+            'wholesaleprice' => $wholesaleVal,
+            'quantity'       => $current_qty,
+            'price'          => $wholesaleVal
+        ]);
+    } else {
+        echo json_encode(['status' => false]);
+    }
+}
+
+ /*  if (isset($_POST['product_id'])) {
   require 'Database.php';
 
   $productID = $_POST['product_id'];
@@ -33,7 +74,7 @@
     // 'quantity' => $product['Quantity'],
     'price' => $product['Price'],
   ]);
-}
+} */
 
 
   /* if (isset($_POST['product_id'])) {
