@@ -154,6 +154,8 @@
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     // Initialize DataTable
-    $('#collectTable').DataTable();
+    $('#collectTable').DataTable({
+      pageLength: 100,
+    });
   });
 </script>

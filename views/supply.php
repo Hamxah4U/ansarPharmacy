@@ -224,9 +224,7 @@
           return (supplyQty / pcs).toFixed(); // Formats to 2 decimal places
         }
       },
-			// { "data": "Quantity"},
-			// { "data": "supplyqty"},
-
+			
 			{ 
 				"data": null,
 					"render": function (data, type, row) {
@@ -235,7 +233,7 @@
 			},  
 			// { "data": "Status" },
 			{ "data": "SupplyDate" },
-      		{ "data": "ExpiryDate" },
+      { "data": "ExpiryDate" },
 			{ "data": "RecordedBy" }
 			
 		]
