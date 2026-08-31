@@ -13,6 +13,11 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
         $supplyqty = htmlspecialchars($_POST['qty']);
         $productCode = htmlspecialchars($_POST['productCode']);
 
+        $pcs_per_unit = isset($_POST['pcs_per_unit']) ? htmlspecialchars($_POST['pcs_per_unit']) : 1;
+        $half_price = isset($_POST['half_price']) ? htmlspecialchars($_POST['half_price']) : 0;
+        $quarter_price = isset($_POST['quarter_price']) ? htmlspecialchars($_POST['quarter_price']) : 0;
+        $pc_price = isset($_POST['pc_price']) ? htmlspecialchars($_POST['pc_price']) : 0;
+
         //update
         // $pack = htmlspecialchars($_POST['pack']);
         // $unitpack = htmlspecialchars($_POST['unitpack']);
@@ -66,17 +71,25 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 }
             } else {
                 $user = $_SESSION['email'];
-                // $qty =  $unitpack * $pack;
-                $stmt = $db->conn->prepare("INSERT INTO `supply_tbl` (`productcode`, `Department`, `ProductName`, `Quantity`, `supplyqty`, `Price`, `Pprice`, `ExpiryDate`, `RecordedBy`, `wholesaleprice`) VALUES (:productcode, :dpt, :product, :qty , :supplyqty, :price, :Pprice, :ExpiryDate, :RecordedBy, :wholesale) ");
+                $newQty = $qty * $pcs_per_unit;
+                $newSupplyQty = $supplyqty * $pcs_per_unit;
+                $stmt = $db->conn->prepare("INSERT INTO `supply_tbl` 
+                (`productcode`, `Department`, `ProductName`, `Quantity`, `supplyqty`, `Price`, `Pprice`, `ExpiryDate`, `RecordedBy`, `wholesaleprice`, `pcs_per_unit`, `half_price`, `quarter_price`, `pc_price`)
+                 VALUES 
+                (:productcode, :dpt, :product, :qty , :supplyqty, :price, :Pprice, :ExpiryDate, :RecordedBy, :wholesale, :pcs_per_unit, :half_price, :quarter_price, :pc_price) ");
                 $stmt->bindParam(':dpt', $unit, PDO::PARAM_INT);
                 $stmt->bindParam(':product', $product, PDO::PARAM_STR);
-                $stmt->bindParam(':qty', $qty, PDO::PARAM_INT);
-                $stmt->bindParam(':supplyqty', $supplyqty, PDO::PARAM_INT);
+                $stmt->bindParam(':qty', $newQty, PDO::PARAM_INT);
+                $stmt->bindParam(':supplyqty', $newSupplyQty, PDO::PARAM_INT);
                 $stmt->bindParam(':price', $price);
                 $stmt->bindParam(':Pprice', $purchasePrice);
                 $stmt->bindParam(':ExpiryDate', $ExpiryDate);
                 $stmt->bindParam(':RecordedBy', $user);
                 $stmt->bindParam(':productcode', $productCode);
+                $stmt->bindParam(':pcs_per_unit', $pcs_per_unit);
+                $stmt->bindParam(':half_price', $half_price);
+                $stmt->bindParam(':quarter_price', $quarter_price);
+                $stmt->bindParam(':pc_price', $pc_price);
                 //updates
                 // $stmt->bindParam(':pack', $pack);
                 // $stmt->bindParam(':unitpack', $unitpack);

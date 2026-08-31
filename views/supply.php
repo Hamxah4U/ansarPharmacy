@@ -84,45 +84,62 @@
 				<form id="formSupply">
           <input type="hidden" name="supplyID" id="supplyID">
           <!-- <input type="hidden" name="unit" id="unitID" value="7"> -->
-
-
+				
 					<div class="form-group">
-						<label for="">Store/Department</label>
-						<select name="unit" class="form-control" id="unitID">
-							<option value="--choose--">--choose--</option>
-							<?php
-									$stmt = $db->query('SELECT * FROM `department_tbl`');
-									$units = $stmt->fetchAll(PDO::FETCH_ASSOC);
-									foreach($units as $unit): ?>
-									<option value="<?php echo $unit['deptID']; ?>"><?php echo $unit['Department']; ?></option>
-							<?php endforeach ?>
-						</select>
-						<small class="text-danger" id="errorUnit"></small>
-					</div> 
+						<div class="row">
+							<div class="col-md-6">
+								<label for="">Store</label>
+								<select name="unit" class="form-control" id="unitID">
+									<option value="--choose--">--choose--</option>
+									<?php
+											$stmt = $db->query('SELECT * FROM `department_tbl`');
+											$units = $stmt->fetchAll(PDO::FETCH_ASSOC);
+											foreach($units as $unit): ?>
+											<option value="<?php echo $unit['deptID']; ?>"><?php echo $unit['Department']; ?></option>
+									<?php endforeach ?>
+								</select>
+								<small class="text-danger" id="errorUnit"></small>
+							</div>
 
-					<div class="form-group">
-						<label for="">Product</label>
-						<input class="form-control" type="text" id="productNameID" name="product" placeholder="Enter product name">
-						<small class="text-danger" id="errorProduct"></small>
-					</div>
-
-					<!-- <div class="form-group">
-						<label for="">Product code (QR/Barcode):</label>
-						<input class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
-						<small class="text-danger" id="errorProductCode"></small>
-					</div> -->
-					<input hidden class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
-
-          <div class="form-group">
-						<label for="">Quantity <?= $placeholder ?></label>
-						<input class="form-control" type="number" id="qty" name="qty" placeholder="Enter total quantity">
-						<small class="text-danger" id="errorQty"></small>
+							<div class="col-md-6">
+								<label for="">Product</label>
+								<input class="form-control" type="text" id="productNameID" name="product" placeholder="Enter product name">
+								<small class="text-danger" id="errorProduct"></small>
+							</div>
+						</div>
 					</div>
 
 					<div class="form-group">
-						<label for="ExpiryDate">ExpiryDate</label>
-						<input type="date" name="ExpiryDate" id="ExpiryDate" class="form-control">
-						<small class="text-danger" id="errorEx"></small>
+						<div class="row">
+						
+							<div class="col-md-6">
+								<label for="qty">Quantity <?= $placeholder ?></label>
+								<input class="form-control" type="number" id="qty" name="qty" placeholder="Enter total quantity">
+								<small class="text-danger" id="errorQty"></small>
+							</div>
+
+							<div class="col-md-6">
+								<label for="pcsPerUnit">Pieces Per Unit</label>
+								<input class="form-control" type="number" id="pcs_per_unit_id" name="pcs_per_unit" placeholder="Enter pieces per unit">
+							</div>
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<div class="row">
+							<div class="col-md-6">
+								<label for="">Product code (QR/Barcode):</label>
+								<input class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252">
+								<small class="text-danger" id="errorProductCode"></small>
+								<!-- <input hidden class="form-control" type="text" id="productCodeID" name="productCode" placeholder="e.g 203765252"> -->
+							</div>
+
+							<div class="col-md-6">
+								<label for="ExpiryDate">ExpiryDate</label>
+								<input type="date" name="ExpiryDate" id="ExpiryDate" class="form-control">
+								<small class="text-danger" id="errorEx"></small>
+							</div>
+						</div>
 					</div>
 
 					<div class="form-group">
@@ -132,18 +149,40 @@
 					</div>
 
 					<div class="form-group">
-						<label for="my-input">Retails Price (&#8358;)</label>
-						<input class="form-control" type="int" name="price" id="priceID" placeholder="Retail price <?= $placeholder2 ?>" require>
-						<small class="text-danger" id="errorPrice"></small>
+						<div class="row">
+							<div class="col-md-6">
+								<label for="my-input">Retails Price (&#8358;)</label>
+							<input class="form-control" type="int" name="price" id="priceID" placeholder="Retail price <?= $placeholder2 ?>" require>
+							<small class="text-danger" id="errorPrice"></small>
+							</div>
+							<div class="col-md-6">
+								<label for="my-input">Wholesale Price (&#8358;)</label>
+								<input class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
+								<small class="text-danger" id="errorWholesale"></small>
+								<!-- <input hidden value="1" class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required> -->
+							</div>
+						</div>
 					</div>
 
-					<!-- <div class="form-group">
-						<label for="my-input">Wholesale Price (&#8358;)</label>
-						<input class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
-						<small class="text-danger" id="errorWholesale"></small>
-					</div> -->
-					<input hidden value="1" class="form-control" type="int" name="wholesale" id="wholesaleprice" placeholder="Wholesale price <?= $placeholder2 ?>" required>
+					<div class="form-group">
+						<div class="row">
+							<div class="col-md-4">
+								<label>Price per half</label>
+								<input type="number" name="half_price" id="half_price" class="form-control" placeholder="Price per half">
+							</div>
 
+							<div class="col-md-4">
+								<label>Price per quater</label>
+								<input type="number" name="quarter_price" id="quarter_price" class="form-control" placeholder="Price per quater">
+							</div>
+
+							<div class="col-md-4">
+								<label>Price per pcs</label>
+								<input type="number" name="pc_price" id="pc_price" class="form-control" placeholder="Price per pcs">
+							</div>
+
+						</div>
+					</div>
 					
 					<button type="submit" class="btn btn-primary" id="action-btn" data-mode='add'><strong>Save</strong></button>
 				</form>
@@ -154,6 +193,7 @@
 
 <script>
 	$('#supplyTable').DataTable({
+		pageLength: 100,
 		ajax: {
 			url : 'model/supply.table.php',
 			dataSrc: '',
@@ -166,8 +206,26 @@
 			{ "data": "Pprice"},
 			{ "data": "Price"},
 			{ "data": "wholesaleprice"},
-			{ "data": "Quantity"},
-			{ "data": "supplyqty"},
+
+			{ 
+        "data": null,
+        "render": function (data, type, row) {
+          let pcs = parseFloat(row.pcs_per_unit) || 1;
+          let qty = parseFloat(row.Quantity) || 0;
+          return (qty / pcs).toFixed(); // Formats to 2 decimal places
+        }
+      },
+
+			{ 
+        "data": null,
+        "render": function (data, type, row) {
+          let pcs = parseFloat(row.pcs_per_unit) || 1;
+          let supplyQty = parseFloat(row.supplyqty) || 0;
+          return (supplyQty / pcs).toFixed(); // Formats to 2 decimal places
+        }
+      },
+			// { "data": "Quantity"},
+			// { "data": "supplyqty"},
 
 			{ 
 				"data": null,
