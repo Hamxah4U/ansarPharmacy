@@ -79,7 +79,7 @@
             FROM transaction_tbl 
             WHERE Status = 'Paid' 
             AND MONTH(TransacDate) = MONTH(CURRENT_DATE()) 
-            AND YEAR(TransacDate) = YEAR(CURRENT_DATE()) 
+            AND YEAR(TransacDate)   = YEAR(CURRENT_DATE()) 
             AND TID IN (
                 SELECT MIN(TID) 
                 FROM transaction_tbl 
