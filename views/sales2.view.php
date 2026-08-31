@@ -106,8 +106,7 @@
 
             <div class="form-group col-md-4">
               <label><strong>Product:</strong></label>
-              <select id="productSelect" class="form-control">
-              </select>
+              <select id="productSelect" class="form-control"></select>
               <small class="text-danger" id="errorService"></small>
             </div>
             

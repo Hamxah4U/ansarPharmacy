@@ -6,7 +6,7 @@ if (isset($_POST['department_id'])) {
   $deptID = $_POST['department_id'];
   $qty = 0;
 
-  $stmt = $db->conn->prepare("SELECT Quantity, SupplyID, ProductName FROM supply_tbl WHERE Department = :deptID AND Quantity > :qty");
+  $stmt = $db->conn->prepare("SELECT Quantity, SupplyID, ProductName FROM supply_tbl WHERE Department = :deptID AND Quantity > :qty ORDER BY ProductName ASC");
   $stmt->execute(['deptID' => $deptID, ':qty' => $qty]);
   $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
