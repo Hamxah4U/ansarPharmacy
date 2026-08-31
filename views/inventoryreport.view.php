@@ -126,6 +126,7 @@
 <script>
   const today = new Date();
 	$('#supplyTable').DataTable({
+		pageLength: 100,
 		ajax: {
 			url : 'model/inventory.table.php', //inventory.table.php
 			dataSrc: '',
