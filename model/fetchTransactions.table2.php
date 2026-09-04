@@ -5,29 +5,70 @@
   // START output buffering to prevent invalid JSON
   ob_start();
 
+  function formatQuantityFraction($rawQty, $pcsPerUnit = 1, $unitType = '', $unitKey = '', $typeCode = 'pcs') {
+    if ($rawQty <= 0) return '0 pcs';
+
+    $pcsPerUnit = max(1, (int)$pcsPerUnit);
+    $unitTypeVal = strtolower((string)$unitType);
+    $unitKeyVal  = strtolower((string)$unitKey);
+    $isPieceType = ($unitTypeVal === '4' || $unitTypeVal === 'pc' || $unitKeyVal === 'pc');
+
+    // If it's a Piece type, output raw pieces directly
+    if ($isPieceType) {
+        return (int)$rawQty . ' ' . ($typeCode ?: 'pcs');
+    }
+
+    // Calculate unit value (e.g., 12 pcs / 24 pcs per unit = 0.5)
+    $qty = $rawQty / $pcsPerUnit;
+    $whole = floor($qty);
+    $fractional = $qty - $whole;
+    $fractionStr = '';
+
+    // Convert decimal remainders into fraction strings
+    if (abs($fractional - 0.50) < 0.01) {
+        $fractionStr = '½';
+    } elseif (abs($fractional - 0.25) < 0.01) {
+        $fractionStr = '¼';
+    } elseif (abs($fractional - 0.75) < 0.01) {
+        $fractionStr = '¾';
+    } elseif ($fractional > 0) {
+        $fractionStr = number_format($fractional, 2);
+    }
+
+    $formattedQty = '';
+    if ($whole > 0) {
+        $formattedQty = $fractionStr ? $whole . ' ' . $fractionStr : (string)$whole;
+    } else {
+        $formattedQty = $fractionStr ?: (string)$qty;
+    }
+
+    return trim($formattedQty . ' ' . ($typeCode ?: 'pcs'));
+}
+
   $stmtUnits = $db->conn->query("SELECT id, unit_key, unit_label FROM unit_types_tbl ORDER BY id ASC");
   $allUnitTypes = $stmtUnits->fetchAll(PDO::FETCH_ASSOC);
 
-  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
+  
+
+  /* if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
 
       header('Content-Type: application/json');
 
       try {
-          // Validate input safely
           if (!isset($_POST['tid'], $_POST['new_qty'])) {
               throw new Exception('Invalid request data');
           }
 
           $tid = intval($_POST['tid']);
-          $newQty = intval($_POST['new_qty']);
+          $newQty = floatval($_POST['new_qty']); // Input count (e.g. 2 for 2 Cartons)
 
-          if ($newQty < 1) {
-              throw new Exception('Quantity must be at least 1');
+          if ($newQty <= 0) {
+              throw new Exception('Quantity must be greater than 0');
           }
 
-          // Get transaction
+          // Fetch transaction details along with pcs_per_unit_v directly
           $stmt = $db->conn->prepare("
-              SELECT Price, Product, tDepartment, tCode 
+              SELECT Price, Product, tDepartment, tCode, pcs_per_unit_v 
               FROM transaction_tbl 
               WHERE TID = :tid AND Status = 'Not-Paid'
           ");
@@ -38,7 +79,13 @@
               throw new Exception('Transaction not found or already paid');
           }
 
-          // Check stock
+          // Read pcs_per_unit_v directly from transaction_tbl
+          $pcsPerUnit = max(1, intval($transaction['pcs_per_unit_v'] ?? 1));
+          
+          // Total pieces = user count * pieces per unit (e.g. 2 CTN * 24 = 48 pcs)
+          $rawPieceQty = $newQty * $pcsPerUnit; 
+
+          // Check stock available in supply_tbl
           $stmtStock = $db->conn->prepare("
               SELECT Quantity 
               FROM supply_tbl 
@@ -48,43 +95,36 @@
               ':product' => $transaction['Product'],
               ':dept' => $transaction['tDepartment']
           ]);
-
           $stock = $stmtStock->fetch(PDO::FETCH_ASSOC);
 
-          if (!$stock) {
-              throw new Exception('Stock record not found');
+          if ($stock && $rawPieceQty > intval($stock['Quantity'])) {
+              throw new Exception('Insufficient stock! Available: ' . $stock['Quantity'] . ' pcs');
           }
 
-          if ($newQty > intval($stock['Quantity'])) {
-              throw new Exception('Insufficient stock! Available: ' . $stock['Quantity']);
-          }
+          // Amount = Price of selected unit * unit quantity entered
+          $newAmount = $transaction['Price'] * $newQty; 
 
-          // Calculate amount
-          $newAmount = $transaction['Price'] * $newQty;
-
-          // Update
+          // Update raw piece count and new amount
           $stmtUpdate = $db->conn->prepare("
               UPDATE transaction_tbl 
               SET qty = :qty, Amount = :amount 
               WHERE TID = :tid
           ");
           $stmtUpdate->execute([
-              ':qty' => $newQty,
+              ':qty' => $rawPieceQty,
               ':amount' => $newAmount,
               ':tid' => $tid
           ]);
 
-          // Get total
+          // Recalculate transaction group total
           $stmtTotal = $db->conn->prepare("
               SELECT SUM(Amount) as total 
               FROM transaction_tbl 
               WHERE tCode = :tCode AND Status = 'Not-Paid'
           ");
           $stmtTotal->execute([':tCode' => $transaction['tCode']]);
-
           $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
 
-          // CLEAN buffer before output
           ob_clean();
 
           echo json_encode([
@@ -95,17 +135,110 @@
           exit;
 
       } catch (Exception $e) {
-
-          // CLEAN buffer before output
           ob_clean();
-
           echo json_encode([
               'status' => false,
               'error' => $e->getMessage()
           ]);
           exit;
       }
-  }
+  } */
+
+  if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_quantity') {
+    header('Content-Type: application/json');
+
+    try {
+        if (!isset($_POST['tid'], $_POST['new_qty'])) {
+            throw new Exception('Invalid request data');
+        }
+
+        $tid = intval($_POST['tid']);
+        $inputQty = floatval($_POST['new_qty']); // The user-entered count (e.g., 1 carton or 4 pcs)
+
+        if ($inputQty <= 0) {
+            throw new Exception('Quantity must be greater than 0');
+        }
+
+        // Fetch transaction details along with unit_type and pcs_per_unit_v
+        $stmt = $db->conn->prepare("
+            SELECT Price, Product, tDepartment, tCode, pcs_per_unit_v, unit_type 
+            FROM transaction_tbl 
+            WHERE TID = :tid AND Status = 'Not-Paid'
+        ");
+        $stmt->execute([':tid' => $tid]);
+        $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$transaction) {
+            throw new Exception('Transaction not found or already paid');
+        }
+
+        $pcsPerUnit = max(1, intval($transaction['pcs_per_unit_v'] ?? 1));
+        $unitTypeVal = strtolower((string)($transaction['unit_type'] ?? ''));
+        $isPieceType = ($unitTypeVal === '4' || $unitTypeVal === 'pc');
+
+        if ($isPieceType) {
+            $rawPieceQty = $inputQty; // If unit is pieces, input is directly raw pieces
+        } else {
+            $rawPieceQty = $inputQty * $pcsPerUnit; // e.g., 1 CTN * 48 = 48 pcs
+        }
+
+        // Check stock available in supply_tbl
+        $stmtStock = $db->conn->prepare("
+            SELECT Quantity 
+            FROM supply_tbl 
+            WHERE SupplyID = :product AND Department = :dept
+        ");
+        $stmtStock->execute([
+            ':product' => $transaction['Product'],
+            ':dept' => $transaction['tDepartment']
+        ]);
+        $stock = $stmtStock->fetch(PDO::FETCH_ASSOC);
+
+        if ($stock && $rawPieceQty > intval($stock['Quantity'])) {
+            throw new Exception('Insufficient stock! Available: ' . $stock['Quantity'] . ' pcs');
+        }
+
+        // Amount = Price of selected unit type * input quantity entered
+        $newAmount = $transaction['Price'] * $inputQty; 
+
+        // Update database with calculated raw piece count and amount
+        $stmtUpdate = $db->conn->prepare("
+            UPDATE transaction_tbl 
+            SET qty = :qty, Amount = :amount 
+            WHERE TID = :tid
+        ");
+        $stmtUpdate->execute([
+            ':qty' => $rawPieceQty,
+            ':amount' => $newAmount,
+            ':tid' => $tid
+        ]);
+
+        // Recalculate group total
+        $stmtTotal = $db->conn->prepare("
+            SELECT SUM(Amount) as total 
+            FROM transaction_tbl 
+            WHERE tCode = :tCode AND Status = 'Not-Paid'
+        ");
+        $stmtTotal->execute([':tCode' => $transaction['tCode']]);
+        $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
+
+        ob_clean();
+        echo json_encode([
+            'status' => true,
+            'new_amount' => $newAmount,
+            'new_total' => $total['total'] ?? 0
+        ]);
+        exit;
+
+    } catch (Exception $e) {
+        ob_clean();
+        echo json_encode([
+            'status' => false,
+            'error' => $e->getMessage()
+        ]);
+        exit;
+    }
+}
 
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_price') {
       header('Content-Type: application/json');
@@ -177,57 +310,7 @@
       }
   }
 
-  /* if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_unit_type') {
-    header('Content-Type: application/json');
-
-    try {
-        if (!isset($_POST['tid'], $_POST['new_unit_type'])) {
-            throw new Exception('Invalid request data');
-        }
-
-        $tid = intval($_POST['tid']);
-        $newUnitType = trim($_POST['new_unit_type']);
-
-        // Check if transaction exists and is unpaid
-        $stmt = $db->conn->prepare("
-            SELECT TID 
-            FROM transaction_tbl 
-            WHERE TID = :tid AND Status = 'Not-Paid'
-        ");
-        $stmt->execute([':tid' => $tid]);
-        $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$transaction) {
-            throw new Exception('Transaction not found or already paid');
-        }
-
-        // Update unit_type in transaction table
-        $stmtUpdate = $db->conn->prepare("
-            UPDATE transaction_tbl 
-            SET unit_type = :unit_type 
-            WHERE TID = :tid
-        ");
-        $stmtUpdate->execute([
-            ':unit_type' => $newUnitType,
-            ':tid' => $tid
-        ]);
-
-        ob_clean();
-        echo json_encode([
-            'status' => true,
-            'message' => 'Unit type updated successfully'
-        ]);
-        exit;
-
-    } catch (Exception $e) {
-        ob_clean();
-        echo json_encode([
-            'status' => false,
-            'error' => $e->getMessage()
-        ]);
-        exit;
-    }
-  } */
+  
 
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_unit_type') {
     header('Content-Type: application/json');
@@ -302,6 +385,7 @@
         ]);
 
         // 6. Calculate total for all unpaid items in transaction
+        // 6. Calculate total for all unpaid items in transaction
         $stmtTotal = $db->conn->prepare("
             SELECT SUM(Amount) as total 
             FROM transaction_tbl 
@@ -310,12 +394,27 @@
         $stmtTotal->execute([':tCode' => $transaction['tCode']]);
         $total = $stmtTotal->fetch(PDO::FETCH_ASSOC);
 
+        // 7. Fetch unit_type details (unit_key & type_code) to send back to JS
+        $stmtUnitInfo = $db->conn->prepare("
+            SELECT unit_key, type_code 
+            FROM unit_types_tbl 
+            WHERE id = :id OR unit_key = :key 
+            LIMIT 1
+        ");
+        $stmtUnitInfo->execute([
+            ':id' => $newUnitType, 
+            ':key' => $newUnitType
+        ]);
+        $unitInfo = $stmtUnitInfo->fetch(PDO::FETCH_ASSOC);
+
         ob_clean();
         echo json_encode([
             'status' => true,
             'new_price' => $newPrice,
             'new_amount' => $newAmount,
-            'new_total' => $total['total'] ?? 0
+            'new_total' => $total['total'] ?? 0,
+            'type_code' => $unitInfo['type_code'] ?? 'pcs',
+            'unit_key' => $unitInfo['unit_key'] ?? ''
         ]);
         exit;
 
@@ -458,17 +557,39 @@
 <?php
   // Regular request to display the table
   if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
-      $tCode = htmlspecialchars($_POST['tcode']);    
-
-      $sql = 'SELECT Customer AS pCustomer, ProductName, TID, tCode, transaction_tbl.Price AS Price, qty, unit_type, Amount, transaction_tbl.Status AS TStatus  
+      $tCode = htmlspecialchars($_POST['tcode']); 
+        $sql = 'SELECT 
+            u.unit_key, 
+            u.unit_label, 
+            u.type_code, 
+            pcs_per_unit_v AS pcsPerUnit, 
+            Customer AS pCustomer, 
+            ProductName, 
+            TID, 
+            tCode, 
+            transaction_tbl.Price AS Price, 
+            qty, 
+            unit_type, 
+            Amount, 
+            transaction_tbl.Status AS TStatus  
         FROM transaction_tbl 
-        JOIN supply_tbl ON Product = supply_tbl.SupplyID 
+        JOIN supply_tbl ON Product = supply_tbl.SupplyID
+        LEFT JOIN unit_types_tbl u ON u.id = transaction_tbl.unit_type OR u.unit_key = transaction_tbl.unit_type
         WHERE tCode = :tCode';
 
       $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
       $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $hasNotPaid = false;
+
+      foreach ($products as $pRow) {
+          if ($pRow['TStatus'] == 'Not-Paid') {
+              $hasNotPaid = true;
+              break;
+          }
+      }
 
       if (!empty($products)): ?>
+        <input type="text" id="transactionStatusFlag" value="<?= $hasNotPaid ? 'Not-Paid' : 'Paid'; ?>">
         <div class="table-responsive">
         <table class="transaction-table">
           <thead>
@@ -504,17 +625,39 @@
                 <?php endif; ?>
               </td>
               <td class="qty-cell">
+                <?php 
+                  $pcsPerUnit = !empty($row['pcsPerUnit']) ? max(1, (int)$row['pcsPerUnit']) : 1;
+                  $rawQty = (float)$row['qty']; 
+                  
+                  $unitTypeVal = strtolower((string)($row['unit_type'] ?? ''));
+                  $unitKeyVal  = strtolower((string)($row['unit_key'] ?? ''));
+                  $isPieceType = ($unitTypeVal === '4' || $unitTypeVal === 'pc' || $unitKeyVal === 'pc');
+
+                  $displayQty = $isPieceType ? (int)$rawQty : ($pcsPerUnit > 0 ? ($rawQty / $pcsPerUnit) : $rawQty);
+                ?>
+                
                 <?php if ($row['TStatus'] == 'Not-Paid'): ?>
-                  <input type="number" 
-                        id="qty_<?= $row['TID']; ?>"
-                        class="quantity-input" 
-                        value="<?= $row['qty']; ?>" 
-                        min="1" 
-                        data-tid="<?= $row['TID']; ?>"
-                        data-old-qty="<?= $row['qty']; ?>"
-                        style="background-color: #fff; border: 1px solid #ccc; width: 70px; padding: 5px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <input type="number" 
+                          id="qty_<?= $row['TID']; ?>"
+                          class="quantity-input" 
+                          value="<?= $displayQty; ?>" 
+                          min="0.01" 
+                          step="any"
+                          data-tid="<?= $row['TID']; ?>"
+                          data-pcs-per-unit="<?= $pcsPerUnit; ?>"
+                          data-old-qty="<?= $displayQty; ?>"
+                          style="width: 65px; padding: 4px; text-align: center;">
+                    
+                    <small style="color: #555; font-weight: 500;">
+                      <span id="type_code_label_<?= $row['TID']; ?>"><?= htmlspecialchars($row['type_code'] ?? 'pcs'); ?></span>
+                      <span id="total_pcs_span_<?= $row['TID']; ?>" style="<?= $isPieceType ? 'display:none;' : ''; ?>">
+                        (<?= (int)$rawQty; ?> pcs total)
+                      </span>
+                    </small>
+                  </div>
                 <?php else: ?>
-                  <span><?= $row['qty']; ?></span>
+                  <span><?= $displayQty; ?> <?= htmlspecialchars($row['type_code'] ?? 'pcs'); ?></span>
                 <?php endif; ?>
               </td>
               <td class="unit-type-cell">
@@ -557,7 +700,21 @@
             <?php $totalAmount += $row['Amount']; ?>
           <?php endforeach; ?>
           </tbody>
+
           <tfoot>
+            <tr>
+              <td colspan="5">
+                <?php if ($hasNotPaid): ?>
+                  <input type="button" onclick="validateTransaction('<?= $tCode; ?>')" class="btn btn-danger" value="Validate" />
+                <?php else: ?>
+                  <button id="btnPrint" type="button" class="btn btn-info" onclick="PrintDoc2()"> <i class="fas fa-print"></i> Print Receipt </button>
+                <?php endif; ?>
+              </td>
+              <td colspan="1"><strong>Total Amount:</strong> <?= number_format($totalAmount, 2, '.', ','); ?></td>
+            </tr>
+          </tfoot>
+
+         <!--  <tfoot>
             <tr>
               <td colspan="5">
                 <?php 
@@ -572,26 +729,41 @@
                 if($hasNotPaid): ?>
                   <input type="button" onclick="validateTransaction('<?= $tCode; ?>')" class="btn btn-danger" value="Validate" />
                 <?php else: ?>
-                  <!-- <input id="btn2" class="btn btn-dark" type="button" value="Print Receipt" onclick="PrintDoc2()" /><i class="fas fa-print"></i> -->
-
                   <button id="btnPrint" type="button" class="btn btn-info" onclick="PrintDoc2()"> <i class="fas fa-print"></i> Print Receipt </button>
                 <?php endif; ?>
               </td>
               <td colspan="1"><strong>Total Amount:</strong> <?= number_format($totalAmount, 2, '.', ','); ?></td>
             </tr>
-          </tfoot>
+          </tfoot> -->
         </table>
         </div>
 
         <div id="not_paid" style="display: none;">
           <div id="contentToPrint">
             <?php
-              $sql = 'SELECT `department_tbl`.`Department` AS store, qty, Amount, ProductName, Product, Customer, TID, tCode, transaction_tbl.Price AS Price, transaction_tbl.Status AS TStatus,
-                            cash, transfer, pos
-                      FROM transaction_tbl
-                      JOIN supply_tbl ON Product = supply_tbl.SupplyID
-                      JOIN `department_tbl` ON `transaction_tbl`.`tDepartment` = `department_tbl`.`deptID`
-                      WHERE tCode = :tCode AND transaction_tbl.Status = "Paid"';
+                $sql = 'SELECT 
+                  `department_tbl`.`Department` AS store, 
+                  transaction_tbl.qty, 
+                  transaction_tbl.pcs_per_unit_v AS pcsPerUnit,
+                  transaction_tbl.unit_type,
+                  u.unit_key,
+                  u.type_code,
+                  Amount, 
+                  ProductName, 
+                  Product, 
+                  Customer, 
+                  TID, 
+                  tCode, 
+                  transaction_tbl.Price AS Price, 
+                  transaction_tbl.Status AS TStatus,
+                  cash, 
+                  transfer, 
+                  pos
+                FROM transaction_tbl
+                JOIN supply_tbl ON Product = supply_tbl.SupplyID
+                JOIN `department_tbl` ON `transaction_tbl`.`tDepartment` = `department_tbl`.`deptID`
+                LEFT JOIN unit_types_tbl u ON u.id = transaction_tbl.unit_type OR u.unit_key = transaction_tbl.unit_type
+                WHERE tCode = :tCode AND transaction_tbl.Status = "Paid"';
 
               $stmt = $db->checkExist($sql, [':tCode' => $tCode]);
               $productsPaid = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -636,7 +808,16 @@
                                   foreach($productsPaid as $row) :?>
                                   <tr>
                                     <td><?= $row['ProductName'] ?></td>
-                                    <td><?= $row['qty'] ?></td>
+                                    <td>
+                                      <?= formatQuantityFraction(
+                                            $row['qty'], 
+                                            $row['pcsPerUnit'] ?? 1, 
+                                            $row['unit_type'] ?? '', 
+                                            $row['unit_key'] ?? '', 
+                                            $row['type_code'] ?? 'pcs'
+                                          ); 
+                                      ?>
+                                    </td>
                                     <td><?= number_format($row['Price']) ?></td>
                                     <td><?= number_format($row['Amount']) ?></td>
                                   </tr>
@@ -671,102 +852,76 @@
         </div>
 
         <script>
-        // Bind change event to quantity inputs after the table is loaded
-        $(document).ready(function() {
-            $('.quantity-input').off('change').on('change', function() {
-                updateQuantity(this);
-            });
-            console.log('Quantity inputs found:', $('.quantity-input').length);
-        });
+          // Bind change event to quantity inputs after the table is loaded
+          $(document).ready(function() {
+              $('.quantity-input').off('change').on('change', function() {
+                  updateQuantity(this);
+              });
+              console.log('Quantity inputs found:', $('.quantity-input').length);
+          });
         
-        function updateQuantity(element) {
-            console.log('updateQuantity called', element);
-            
-            const newQty = parseInt($(element).val());
-            const tid = $(element).data('tid');
-            const oldQty = parseInt($(element).data('old-qty'));
-            const row = $('#row_' + tid);
-            const price = parseFloat(row.data('price'));
-            
-            console.log('New Qty:', newQty, 'TID:', tid, 'Old Qty:', oldQty);
-            
-            // Validate quantity
-            if(isNaN(newQty) || newQty < 1) {
-                $(element).val(oldQty);
-                Swal.fire('Error', 'Quantity must be at least 1', 'error');
-                return;
-            }
-            
-            // Show loading state
-            row.addClass('updating-row');
-            $(element).prop('disabled', true);
-            
-            // Send AJAX request to update quantity
-            $.ajax({
-              //   url: window.location.href,
-                  url: 'model/fetchTransactions.table2.php',
-                method: 'POST',
-                data: {
-                    action: 'update_quantity',
-                    tid: tid,
-                    new_qty: newQty
-                },
-                dataType: 'json',
-                success: function(response) {
-                    console.log('Response:', response);
-                    
-                    if(response.status) {
-                        // Update the amount in the row
-                        $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }));
-                        
-                        // Update the old quantity data attribute
-                        $(element).data('old-qty', newQty);
-                        $(element).attr('data-old-qty', newQty);
-                        
-                        // Update the total amount display
-                        const totalAmountDisplay = $('tfoot td:last-child');
-                        const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
-                        totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
-                        
-                        // Show success
-                      /*  Swal.fire({
-                            icon: 'success',
-                            title: 'Updated!',
-                            text: 'Quantity updated successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }); */
-                        
-                        // Highlight the updated row
-                        row.css('backgroundColor', '#d4edda');
-                        setTimeout(() => {
-                            row.css('backgroundColor', '');
-                        }, 1000);
-                    } else {
-                        // Revert the quantity on error
-                        $(element).val(oldQty);
-                        Swal.fire('Error', response.error || 'Error updating quantity', 'error');
-                    }
-                },
-                error: function(xhr, status, error) {
-                  console.error('RAW RESPONSE:', xhr.responseText);
-                  $(element).val(oldQty);
+          function updateQuantity(element) {
+              const newQty = parseFloat($(element).val());
+              const tid = $(element).data('tid');
+              const oldQty = parseFloat($(element).data('old-qty'));
+              const pcsPerUnit = parseFloat($(element).data('pcs-per-unit')) || 1;
+              const row = $('#row_' + tid);
 
-                  // Swal.fire('Error', 'Server returned invalid response. Check console.', 'error');
-                  Swal.fire('Error', xhr.responseText, 'error');
-                },
-                complete: function() {
-                    row.removeClass('updating-row');
-                    $(element).prop('disabled', false);
-                }
-            });
-        }
+              if (isNaN(newQty) || newQty <= 0) {
+                  $(element).val(oldQty);
+                  Swal.fire('Error', 'Quantity must be greater than 0', 'error');
+                  return;
+              }
+
+              row.addClass('updating-row');
+              $(element).prop('disabled', true);
+
+              $.ajax({
+                  url: 'model/fetchTransactions.table2.php',
+                  method: 'POST',
+                  data: {
+                      action: 'update_quantity',
+                      tid: tid,
+                      new_qty: newQty
+                  },
+                  dataType: 'json',
+                  success: function(response) {
+                      if (response.status) {
+                          // 1. Update Amount & Total
+                          $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                          }));
+
+                          $(element).data('old-qty', newQty).attr('data-old-qty', newQty);
+
+                          const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                          });
+                          $('tfoot td:last-child').html('<strong>Total Amount:</strong> ' + newTotal);
+
+                          // 2. Dynamically update total pieces calculation string
+                          const calcTotalPcs = Math.round(newQty * pcsPerUnit);
+                          $('#total_pcs_span_' + tid).text('(' + calcTotalPcs + ' pcs total)');
+
+                          row.css('backgroundColor', '#d4edda');
+                          setTimeout(() => row.css('backgroundColor', ''), 1000);
+                      } else {
+                          $(element).val(oldQty);
+                          Swal.fire('Error', response.error || 'Error updating quantity', 'error');
+                      }
+                  },
+                  error: function(xhr) {
+                      $(element).val(oldQty);
+                      Swal.fire('Error', xhr.responseText || 'Server communication error', 'error');
+                  },
+                  complete: function() {
+                      row.removeClass('updating-row');
+                      $(element).prop('disabled', false);
+                  }
+              });
+          }
         </script>
 
       <?php else: ?>
@@ -829,7 +984,7 @@
     newWindow.document.close();
   }
 
-  function refreshTransactionTable() {
+    function refreshTransactionTable() {
     const tCode = $('input[name="tcode"]').val();
     console.log('Refreshing table for tCode:', tCode);
     
@@ -839,13 +994,50 @@
         data: { tcode: tCode },
         success: function(data) {
             $('.transaction_table').html(data);
-            console.log('Table refreshed');
+
+            // 1. Read payment status flag
+            const status = $('#transactionStatusFlag').val();
+            const hasRows = $('.transaction-table tbody tr').length > 0;
+
+            // 2. Toggle button visibility based on payment status
+            if (status === 'Paid') {
+                $('#btnAddProduct').hide();
+                $('#btnNewBilling').css('display', 'block').show();
+            } else {
+                $('#btnAddProduct').css('display', 'block').show();
+                $('#btnNewBilling').hide();
+            }
+
+            // 3. Toggle bottom action buttons block
+            if (hasRows) {
+                $('#actionButtons').show();
+            } else {
+                $('#actionButtons').hide();
+            }
         },
         error: function(xhr, status, error) {
             console.error('Error refreshing table:', error);
         }
     });
   }
+
+  /*    function refreshTransactionTable() {
+      const tCode = $('input[name="tcode"]').val();
+      console.log('Refreshing table for tCode:', tCode);
+      
+      $.ajax({
+          url: 'model/fetchTransactions.table2.php',
+          method: 'POST',
+          data: { tcode: tCode },
+          success: function(data) {
+              $('.transaction_table').html(data);
+              console.log('Table refreshed');
+          },
+          error: function(xhr, status, error) {
+              console.error('Error refreshing table:', error);
+          }
+      });
+    } */
 
   function deleteProduct(transactionID) {
     if (confirm('Are you sure you want to delete this transaction?')) {
@@ -964,6 +1156,45 @@
                   timer: 1500,
                   showConfirmButton: false
               });
+              
+              // REFRESH TABLE AFTER SUCCESSFUL VALIDATION IN DB
+              refreshTransactionTable();
+
+              // Auto-print after validation
+              setTimeout(() => {
+                  PrintDoc2();
+              }, 1500);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Validation failed',
+              text: response.errors ? response.errors.error : response.message
+            });
+          }
+        }
+      });
+    }
+
+    /* if(formValues){
+      $.ajax({
+        url: 'model/validateTransaction2.php',
+        method: 'POST',
+        data: {
+          tCode: tCode,
+          cash: formValues[0],
+          transfer: formValues[1],
+          pos: formValues[2]
+        },
+        dataType: 'json',
+        success: function(response) {
+          if (response.status) {
+              Swal.fire({
+                  icon: 'success',
+                  title: 'Transaction validated!',
+                  text: response.message,
+                  timer: 1500,
+                  showConfirmButton: false
+              });
               refreshTransactionTable();
               // Auto-print after validation
               setTimeout(() => {
@@ -985,7 +1216,7 @@
             });
         }
       });
-    }
+    } */
   }  
 </script>
 
@@ -1133,67 +1364,72 @@
     });
 } */
 
-function updateUnitType(element) {
-    const newUnitType = $(element).val();
-    const tid = $(element).data('tid');
-    const oldUnit = $(element).data('old-unit');
-    const row = $('#row_' + tid);
+  function updateUnitType(element) {
+      const newUnitType = $(element).val();
+      const tid = $(element).data('tid');
+      const oldUnit = $(element).data('old-unit');
+      const row = $('#row_' + tid);
 
-    row.addClass('updating-row');
-    $(element).prop('disabled', true);
+      row.addClass('updating-row');
+      $(element).prop('disabled', true);
 
-    $.ajax({
-        url: 'model/fetchTransactions.table2.php',
-        method: 'POST',
-        data: {
-            action: 'update_unit_type',
-            tid: tid,
-            new_unit_type: newUnitType
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.status) {
-                // Update cached unit attribute
-                $(element).data('old-unit', newUnitType);
-                $(element).attr('data-old-unit', newUnitType);
+      $.ajax({
+          url: 'model/fetchTransactions.table2.php',
+          method: 'POST',
+          data: {
+              action: 'update_unit_type',
+              tid: tid,
+              new_unit_type: newUnitType
+          },
+          dataType: 'json',
+          success: function(response) {
+              if (response.status) {
+                  $(element).data('old-unit', newUnitType).attr('data-old-unit', newUnitType);
 
-                // Update Row Price field
-                $('#price_' + tid).val(parseFloat(response.new_price).toFixed(2));
-                $('#price_' + tid).data('old-price', response.new_price);
-                row.data('price', response.new_price);
+                  // 1. Update price and amounts
+                  $('#price_' + tid).val(parseFloat(response.new_price).toFixed());
+                  $('#price_' + tid).data('old-price', response.new_price);
+                  row.data('price', response.new_price);
 
-                // Update Row Amount text
-                $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }));
+                  $('#amount_' + tid).text(parseFloat(response.new_amount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                  }));
 
-                // Update Global Total text
-                const totalAmountDisplay = $('tfoot td:last-child');
-                const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                totalAmountDisplay.html('<strong>Total Amount:</strong> ' + newTotal);
+                  const newTotal = parseFloat(response.new_total).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                  });
+                  $('tfoot td:last-child').html('<strong>Total Amount:</strong> ' + newTotal);
 
-                // Highlight updated row
-                row.css('backgroundColor', '#d4edda');
-                setTimeout(() => {
-                    row.css('backgroundColor', '');
-                }, 1000);
-            } else {
-                $(element).val(oldUnit);
-                Swal.fire('Error', response.error || 'Failed to update unit type', 'error');
-            }
-        },
-        error: function(xhr) {
-            $(element).val(oldUnit);
-            Swal.fire('Error', xhr.responseText || 'Server error updating unit type', 'error');
-        },
-        complete: function() {
-            row.removeClass('updating-row');
-            $(element).prop('disabled', false);
-        }
-    });
-}
+                  // 2. Update type code label text (e.g., ctn, hlf, qtr, pcs)
+                  if (response.type_code) {
+                      $('#type_code_label_' + tid).text(response.type_code);
+                  }
+
+                  // 3. Hide total pieces text if unit is Piece ('pc' or '4'), otherwise show it
+                  const unitKey = (response.unit_key || '').toLowerCase();
+                  if (unitKey === 'pc' || newUnitType == '4') {
+                      $('#total_pcs_span_' + tid).hide();
+                  } else {
+                      $('#total_pcs_span_' + tid).show();
+                  }
+
+                  row.css('backgroundColor', '#d4edda');
+                  setTimeout(() => row.css('backgroundColor', ''), 1000);
+              } else {
+                  $(element).val(oldUnit);
+                  Swal.fire('Error', response.error || 'Failed to update unit type', 'error');
+              }
+          },
+          error: function(xhr) {
+              $(element).val(oldUnit);
+              Swal.fire('Error', xhr.responseText || 'Server error updating unit type', 'error');
+          },
+          complete: function() {
+              row.removeClass('updating-row');
+              $(element).prop('disabled', false);
+          }
+      });
+  }
 </script>

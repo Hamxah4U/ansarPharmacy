@@ -48,24 +48,24 @@
     } else {
       $pcsPerUnit = !empty($row['pcs_per_unit']) ? intval($row['pcs_per_unit']) : 1;
 
-      // Fetch Unit Multiplier from DB
-      $stmtU = $db->conn->prepare("SELECT unit_label, multiplier FROM unit_types_tbl WHERE unit_key = :ukey LIMIT 1");
+      // Fetch Unit details using EITHER numeric ID or unit_key string safely
+      $stmtU = $db->conn->prepare("SELECT id, unit_key, unit_label, multiplier FROM unit_types_tbl WHERE id = :ukey OR unit_key = :ukey LIMIT 1");
       $stmtU->execute([':ukey' => $unitType]);
       $uRow = $stmtU->fetch(PDO::FETCH_ASSOC);
 
+      $unitKey    = $uRow ? $uRow['unit_key'] : $unitType;
       $multiplier = $uRow ? floatval($uRow['multiplier']) : 1.0;
-      $unitLabel  = $uRow ? $uRow['unit_label'] : '';
 
-      // Calculate Pieces Deducted & Selling Price
-      if ($unitType === 'pc') {
+      // Calculate Deducted Stock Quantity & Unit Selling Price dynamically
+      if ($unitKey === 'pc') {
           $qtyInPcs  = 1 * $issuedqty;
           $unitPrice = !empty($row['pc_price']) ? floatval($row['pc_price']) : (floatval($row['Price']) / $pcsPerUnit);
       } else {
           $qtyInPcs  = ($pcsPerUnit * $multiplier) * $issuedqty;
           
-          if ($unitType === 'half' && !empty($row['half_price'])) {
+          if ($unitKey === 'half' && !empty($row['half_price'])) {
               $unitPrice = floatval($row['half_price']);
-          } elseif ($unitType === 'quarter' && !empty($row['quarter_price'])) {
+          } elseif ($unitKey === 'quarter' && !empty($row['quarter_price'])) {
               $unitPrice = floatval($row['quarter_price']);
           } else {
               $unitPrice = floatval($row['Price']) * $multiplier;
@@ -81,8 +81,8 @@
     if(empty($errors)){
       $amount = $unitPrice * $issuedqty;
 
-      $stmt = $db->conn->prepare("INSERT INTO transaction_tbl (tCode, tDepartment, Product, Price, qty, unit_type, Amount, Customer, TrasacBy, nhisno, TransacTime, TransacDate, pprice)
-       VALUES(:tcode, :tdpt, :product, :price, :qty, :unit_type, :amount, :customer, :TrasacBy, :nhisno, CURRENT_TIME(), CURDATE(), :pprice ) "); 
+      $stmt = $db->conn->prepare("INSERT INTO transaction_tbl (tCode, tDepartment, Product, Price, qty, unit_type, Amount, Customer, TrasacBy, nhisno, TransacTime, TransacDate, pprice, pcs_per_unit_v)
+       VALUES(:tcode, :tdpt, :product, :price, :qty, :unit_type, :amount, :customer, :TrasacBy, :nhisno, CURRENT_TIME(), CURDATE(), :pprice, :pcs_per_unit_v ) "); 
        
       $stmt->execute([
         ':tcode'     => $tcode, 
@@ -95,7 +95,8 @@
         ':TrasacBy'  => $user, 
         ':nhisno'    => $nhisno, 
         ':pprice'    => $row['Pprice'],
-        ':unit_type' => $unit_type
+        ':unit_type' => $unit_type,
+        'pcs_per_unit_v' => $row['pcs_per_unit']
       ]);
 
       echo json_encode(['status' => true]);

@@ -142,10 +142,16 @@
               <input type="text" id="price" class="form-control" readonly>
             </div>
 
-            <div class="form-group col-md-3">
+            <div class="form-group col-md-3" id="productActionBox">
               <label>&nbsp;</label>
-              <button type="button" class="btn btn-success btn-block" onclick="addProductToTable()"><strong>Add Product
-                  →</strong></button>
+              
+              <button type="button" id="btnAddProduct" class="btn btn-success btn-block" onclick="addProductToTable()">
+                <strong>Add Product →</strong>
+              </button>
+
+              <a href="retails" id="btnNewBilling" class="btn btn-primary btn-block" style="display: none;">
+                <i class="fas fa-plus-circle"></i> Start New Billing
+              </a>
             </div>
           </div>
         </div>
@@ -156,8 +162,6 @@
         <!-- Action Buttons - ONLY USE THIS ONE BLOCK -->
         <div class="form-row mt-3" id="actionButtons" style="display: none;">
           <div class="col-md-12">
-            <!-- Validate Button -->
-            <!-- <button id="btnValidate" type="button" class="btn btn-danger" onclick="validateTransaction()">Validate Transaction</button> -->
 
             <!-- Print Button (Hidden by default) -->
             <button id="btnPrint" type="button" class="btn btn-info" style="display: none;" onclick="PrintDoc2()">
@@ -541,9 +545,55 @@ function addProductToTable() {
       alert('Error adding product: ' + error);
     }
   });
+  
 }
 
 function refreshTransactionTable() {
+  const tCode = $('input[name="tcode"]').val();
+  const customerName = $('#customerName').val();
+  const department = $('#storeSelect').val();
+
+  $.ajax({
+    url: 'model/fetchTransactions.table2.php',
+    method: 'POST',
+    data: {
+      tcode: tCode,
+      customername: customerName,
+      department: department
+    },
+    success: function(data) {
+      // 1. Inject the rendered table HTML into the DOM
+      $('.transaction_table').html(data);
+
+      // 2. Fetch the updated status flag injected by PHP
+      const status = $('#transactionStatusFlag').val(); 
+      const hasRows = $('.transaction-table tbody tr').length > 0;
+
+      // 3. Toggle Visibility based on payment status
+      if (status === 'Paid') {
+        // Transaction is Paid: Hide 'Add Product', Show 'Start New Billing'
+        $('#btnAddProduct').hide();
+        $('#btnNewBilling').css('display', 'block').show();
+      } else {
+        // Transaction is Not-Paid: Show 'Add Product', Hide 'Start New Billing'
+        $('#btnAddProduct').css('display', 'block').show();
+        $('#btnNewBilling').hide();
+      }
+
+      // 4. Toggle Action Buttons row
+      if (hasRows) {
+        $('#actionButtons').show();
+      } else {
+        $('#actionButtons').hide();
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('Error refreshing table:', error);
+    }
+  });
+}
+
+/* function refreshTransactionTable() {
   const tCode = $('input[name="tcode"]').val();
   const customerName = $('#customerName').val();
   const department = $('#storeSelect').val();
@@ -563,8 +613,8 @@ function refreshTransactionTable() {
       }
     }
   });
-}
-
+} */
+ 
 function deleteProduct(transactionID) {
   if (confirm('Are you sure you want to delete this item?')) {
     $.ajax({
@@ -590,6 +640,113 @@ function deleteProduct(transactionID) {
 }
 
 function validateTransaction() {
+  const tCode = $('input[name="tcode"]').val();
+
+  Swal.fire({
+    title: "Payment Method",
+    html: `
+      <small id="totalamounterror" class="text-danger"></small>
+      <div class="form-group">
+          <label>Cash (₦):</label>
+          <input id="cashInput" type="number" class="form-control" placeholder="0">
+      </div>
+      <div class="form-group">
+          <label>Transfer (₦):</label>
+          <input id="transferInput" type="number" class="form-control" placeholder="0">
+      </div>
+      <div class="form-group">
+          <label>POS (₦):</label>
+          <input id="posInput" type="number" class="form-control" placeholder="0" value="0">
+      </div>
+      <div class="form-group">
+          <label>Total Amount to Pay:</label>
+          <input id="totalAmount" type="text" class="form-control" readonly>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Validate",
+    cancelButtonText: "Cancel",
+    preConfirm: () => {
+      const cash = parseFloat(document.getElementById("cashInput").value) || 0;
+      const transfer = parseFloat(document.getElementById("transferInput").value) || 0;
+      const pos = parseFloat(document.getElementById("posInput").value) || 0;
+      const totalPaid = cash + transfer + pos;
+      const displayValue = document.getElementById("totalAmount").value;
+      const expectedTotal = parseFloat(displayValue.replace(/[₦,]/g, '')) || 0;
+
+      if (Math.round(totalPaid) !== Math.round(expectedTotal)) {
+        Swal.showValidationMessage(
+          `Total paid: ₦${totalPaid.toLocaleString()} | Expected: ₦${expectedTotal.toLocaleString()}`
+        );
+        return false;
+      }
+      return { cash: cash, transfer: transfer, pos: pos };
+    },
+    didOpen: () => {
+      $.ajax({
+        url: 'model/getTransactionTotal2.php',
+        method: 'POST',
+        data: { tcode: tCode },
+        dataType: 'json',
+        success: function(response) {
+          if (response.status) {
+            const num = parseFloat(response.total);
+            const formatted = num.toLocaleString(undefined, { minimumFractionDigits: 2 });
+            $('#totalAmount').val('₦' + formatted);
+          }
+        }
+      });
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: 'model/validateTransaction.php',
+        method: 'POST',
+        data: {
+          tCode: tCode,
+          cash: result.value.cash,
+          transfer: result.value.transfer,
+          pos: result.value.pos
+        },
+        dataType: 'json',
+        // --- YOUR CODE GOES HERE ---
+        success: function(response) {
+          if (response.status) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: response.message,
+              timer: 1500,
+              showConfirmButton: false
+            });
+
+            // Call refresh inside success block
+            refreshTransactionTable();
+
+            $('#actionButtons').show();
+            $('#btnValidate').hide();
+            $('#btnPrint').show();
+            setTimeout(() => {
+              if (typeof PrintDoc2 === 'function') PrintDoc2();
+            }, 1500);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Failed',
+              text: response.message
+            });
+          }
+        },
+        // ---------------------------
+        error: function() {
+          toastr.error('Connection error. Please try again.');
+        }
+      });
+    }
+  });
+}
+
+/* function validateTransaction() {
   const tCode = $('input[name="tcode"]').val();
 
   Swal.fire({
@@ -696,7 +853,7 @@ function validateTransaction() {
       });
     }
   });
-}
+} */
 </script>
 
 

@@ -14,6 +14,7 @@
     $user         = $_SESSION['email']; 
     $nhisno       = htmlspecialchars($_POST['nhisno'] ?? ''); 
     $unit_type    = htmlspecialchars($_POST['unit_type'] ?? null);
+    
 
     // 1. Check if product with the exact same store (department), product ID, and unit_type already exists on this receipt
     $stmtExist = $db->conn->prepare("
@@ -81,11 +82,11 @@
     if(empty($errors)){
       $amount = $unitPrice * $issuedqty;
 
-      $stmt = $db->conn->prepare("INSERT INTO transaction_tbl (tCode, tDepartment, Product, Price, qty, unit_type, Amount, Customer, TrasacBy, nhisno, TransacTime, TransacDate, pprice)
-       VALUES(:tcode, :tdpt, :product, :price, :qty, :unit_type, :amount, :customer, :TrasacBy, :nhisno, CURRENT_TIME(), CURDATE(), :pprice ) "); 
+      $stmt = $db->conn->prepare("INSERT INTO transaction_tbl (tCode, tDepartment, Product, Price, qty, unit_type, Amount, Customer, TrasacBy, nhisno, TransacTime, TransacDate, pprice, pcs_per_unit)
+       VALUES(:tcode, :tdpt, :product, :price, :qty, :unit_type, :amount, :customer, :TrasacBy, :nhisno, CURRENT_TIME(), CURDATE(), :pprice, :pcs_per_unit ) "); 
        
       $stmt->execute([
-        ':tcode'     => $tcode, 
+        ':tcode'     => $tcode,  
         ':tdpt'      => $dpt, 
         ':product'   => $product, 
         ':price'     => $unitPrice,
@@ -95,7 +96,8 @@
         ':TrasacBy'  => $user, 
         ':nhisno'    => $nhisno, 
         ':pprice'    => $row['Pprice'],
-        ':unit_type' => $unit_type
+        ':unit_type' => $unit_type,
+        ':pcs_per_unit' => $row['pcs_per_unit'],
       ]);
 
       echo json_encode(['status' => true]);

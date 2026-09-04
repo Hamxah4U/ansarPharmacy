@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tcode'])) {
       <table class="table table-striped mt-0 mb-0">
         <tr class="pt-0 pb-0">
           <th>#</th>
-          <th>Description</th>
+          <th>Description___</th>
           <th>Price (&#x20A6)</th>
           <th>Qty</th>
           <th>Amount (&#x20A6)</th>
