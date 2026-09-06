@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2026 at 05:47 PM
+-- Generation Time: Sep 06, 2026 at 02:07 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -65,7 +65,7 @@ CREATE TABLE `department_tbl` (
 --
 
 INSERT INTO `department_tbl` (`deptID`, `Department`, `Status`, `registerby`) VALUES
-(7, 'Ansar Pharmacy', 'Active', 'muhammadushafa@gmail.com'),
+(7, 'Mai Rabo Patent Medicine', 'Active', 'muhammadushafa@gmail.com'),
 (41, 'Health', 'Active', 'hamxah4u@gmail.com');
 
 -- --------------------------------------------------------
@@ -91,7 +91,7 @@ INSERT INTO `diary_tbl` (`id`, `user_id`, `subject`, `message`, `datercorded`, `
 (12, 11, 'kk', '<p>kk</p>', '2025-12-23', '16:40:31'),
 (13, 11, 'cc', '<p>jjj </p>', '2025-12-23', '16:42:38'),
 (14, 11, 'sssss j', '<p>ffhhhhjjjj</p><p>  </p>', '2025-12-23', '16:43:38'),
-(15, 11, 'sssss', '<p>zzzzzzzzzz</p><p> </p><p>aaa</p><p>aaqdqa</p><p> </p><p> </p><p>  </p>', '2025-12-23', '17:46:38'),
+(15, 11, 'sssss', 'hdsdjsjs\r\ndkjgsdghkdgs\r\nkjjhkhsl', '2025-12-23', '17:46:38'),
 (16, 11, 'sssss', '<p>zzz</p>', '2025-12-23', '17:51:40'),
 (17, 11, 'ssss', 'ccccccccccc ;bdlf;bdf slslbs', '2025-12-23', '18:03:31'),
 (18, 11, 'sani', 'ggg kgsg', '2025-12-23', '18:04:25'),
@@ -99,8 +99,8 @@ INSERT INTO `diary_tbl` (`id`, `user_id`, `subject`, `message`, `datercorded`, `
 (20, 11, 'w', 'fsdfsf\r\nffffff\r\nffffffff\r\nffffffffffffff', '2025-12-23', '18:07:55'),
 (21, 11, 'mm', 'kkkkkkkkkkkkkkkkk', '2025-12-23', '18:08:49'),
 (22, 11, 'sssss', 'kkkkk', '2025-12-23', '18:09:46'),
-(23, 11, 'yanxu', 'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssss111111111111111111222222', '2025-12-23', '18:10:17'),
-(24, 11, 'yanxu now', 'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssss', '2025-12-24', '10:47:55'),
+(23, 11, 'yanxu', 'hjgshghsjgs', '2025-12-23', '18:10:17'),
+(24, 11, 'yanxu now', 'trcs', '2025-12-24', '10:47:55'),
 (25, 11, 'now', 'now', '2025-12-24', '10:54:23'),
 (26, 11, 'yanxu', 'okaymmm', '2026-01-05', '22:02:55');
 
@@ -154,6 +154,24 @@ CREATE TABLE `product_tbl` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `stock_reconciliation_logs`
+--
+
+CREATE TABLE `stock_reconciliation_logs` (
+  `id` int(11) NOT NULL,
+  `SupplyID` int(11) NOT NULL,
+  `ProductName` varchar(255) NOT NULL,
+  `VirtualStock` int(11) NOT NULL,
+  `PhysicalStock` int(11) NOT NULL,
+  `Discrepancy` int(11) NOT NULL,
+  `Status` varchar(20) NOT NULL,
+  `AuditedBy` varchar(255) DEFAULT NULL,
+  `AuditDate` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `supply_tbl`
 --
 
@@ -173,17 +191,21 @@ CREATE TABLE `supply_tbl` (
   `SupplyDate` datetime NOT NULL DEFAULT current_timestamp(),
   `RecordedBy` varchar(255) DEFAULT NULL,
   `Status` varchar(20) NOT NULL DEFAULT 'Active',
-  `StockQuantity` int(11) GENERATED ALWAYS AS (`Quantity` * `UnitPack`) STORED
+  `StockQuantity` int(11) GENERATED ALWAYS AS (`Quantity` * `UnitPack`) STORED,
+  `unit_name` varchar(50) DEFAULT 'Pcs',
+  `pcs_per_unit` int(11) NOT NULL DEFAULT 1,
+  `half_price` decimal(10,0) DEFAULT NULL,
+  `quarter_price` decimal(10,0) DEFAULT NULL,
+  `pc_price` decimal(10,0) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `supply_tbl`
 --
 
-INSERT INTO `supply_tbl` (`SupplyID`, `Department`, `ProductName`, `productcode`, `Quantity`, `supplyqty`, `Price`, `wholesaleprice`, `Pprice`, `UnitPack`, `pack`, `ExpiryDate`, `SupplyDate`, `RecordedBy`, `Status`) VALUES
-(148, 7, 'ANC', '8080', 156, 200, 250, 220, 200, 0, 0, '2026-02-05', '2026-02-05 21:36:54', 'hamxah4u@gmail.com', 'Active'),
-(149, 7, 'ANCjjjj', '1995', 1098, 32, 3001, 2901, 110, 0, 0, '2026-02-28', '2026-02-05 21:37:32', 'hamxah4u@gmail.com', 'Active'),
-(150, 41, 'Beans', '2005', 20, 25, 200, 150, 100, 0, 0, '2026-02-09', '2026-02-15 20:21:12', 'hamxah4u@gmail.com', 'Active');
+INSERT INTO `supply_tbl` (`SupplyID`, `Department`, `ProductName`, `productcode`, `Quantity`, `supplyqty`, `Price`, `wholesaleprice`, `Pprice`, `UnitPack`, `pack`, `ExpiryDate`, `SupplyDate`, `RecordedBy`, `Status`, `unit_name`, `pcs_per_unit`, `half_price`, `quarter_price`, `pc_price`) VALUES
+(164, 7, 'Peak Milk', '08037856962', 89, 480, 10000, 9500, 8000, 0, 0, '2026-08-29', '2026-08-31 18:37:15', 'hamxah4u@gmail.com', 'Active', 'Pcs', 24, 5550, 2600, 450),
+(165, 7, 'Luna', '08096250325', 10, 200, 300, 240, 200, 0, 0, '2026-09-09', '2026-09-02 02:43:26', 'hamxah4u@gmail.com', 'Active', 'Pcs', 20, 155, 160, 36);
 
 -- --------------------------------------------------------
 
@@ -468,6 +490,7 @@ CREATE TABLE `transaction_tbl` (
   `Product` int(11) DEFAULT NULL,
   `Price` float DEFAULT NULL,
   `qty` float DEFAULT NULL,
+  `unit_type` varchar(11) DEFAULT NULL,
   `Amount` float NOT NULL,
   `Credit` float DEFAULT NULL,
   `Customer` varchar(100) NOT NULL,
@@ -484,7 +507,8 @@ CREATE TABLE `transaction_tbl` (
   `narration` varchar(200) DEFAULT NULL,
   `creditstatus` varchar(20) DEFAULT NULL,
   `pprice` float DEFAULT NULL,
-  `pprice_amount` float GENERATED ALWAYS AS (`pprice` * `qty`) STORED,
+  `pcs_per_unit_v` int(11) DEFAULT 1,
+  `pprice_amount` float GENERATED ALWAYS AS (`pprice` * (`qty` / `pcs_per_unit_v`)) STORED,
   `profit` float GENERATED ALWAYS AS (coalesce(`Amount`,0) + coalesce(`Credit`,0) - coalesce(`pprice_amount`,0)) STORED,
   `credit_returning_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -493,19 +517,40 @@ CREATE TABLE `transaction_tbl` (
 -- Dumping data for table `transaction_tbl`
 --
 
-INSERT INTO `transaction_tbl` (`TID`, `tCode`, `tDepartment`, `Product`, `Price`, `qty`, `Amount`, `Credit`, `Customer`, `TransacDate`, `TransacTime`, `TrasacBy`, `Status`, `nhisno`, `cash`, `transfer`, `pos`, `crypto`, `CID`, `narration`, `creditstatus`, `pprice`, `credit_returning_date`) VALUES
-(2010, '260430907313156', 7, 148, 250, 3, 750, NULL, 'Musa Abdullahi', '2026-04-30', '15:06:50', 'hamxah4u@gmail.com', 'Paid', '0', '21757', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2011, '260430907313156', 7, 149, 3001, 7, 21007, NULL, 'Musa Abdullahi', '2026-04-30', '15:09:20', 'hamxah4u@gmail.com', 'Paid', '0', '21757', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2012, '260430165030856', 41, 150, 200, 1, 200, NULL, 'Musa Abdullahi', '2026-04-30', '15:12:51', 'hamxah4u@gmail.com', 'Not-Paid', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
-(2013, '260430630555746', 7, 148, 250, 1, 250, NULL, 'Musa Abdullahi', '2026-04-30', '15:17:16', 'hamxah4u@gmail.com', 'Paid', '0', '250', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2014, '260430646986049', 7, 149, 3001, 1, 3001, NULL, 'Musa Abdullahi', '2026-04-30', '15:18:32', 'hamxah4u@gmail.com', 'Paid', '0', '3001', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2015, '260430943710911', 7, 148, 250, 1, 250, NULL, 'Musa Abdullahi', '2026-04-30', '15:20:06', 'hamxah4u@gmail.com', 'Paid', '0', '250', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2016, '260430979371850', 7, 148, 250, 1, 250, NULL, 'Musa Abdullahi', '2026-04-30', '15:21:42', 'hamxah4u@gmail.com', 'Paid', '0', '250', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2017, '260430760672637', 7, 148, 250, 1, 250, NULL, 'Musa Abdullahi', '2026-04-30', '15:23:17', 'hamxah4u@gmail.com', 'Paid', '0', '250', '0', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2018, '260430701410481', 7, 148, 250, 2, 500, NULL, 'Hamza Ibrahim Danasabe', '2026-04-30', '15:39:45', 'hamxah4u@gmail.com', 'Not-Paid', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL),
-(2019, '260430977328327', 41, 150, 200, 2, 400, NULL, 'Hamza Ibrahim Danasabe', '2026-04-30', '16:57:39', 'hamxah4u@gmail.com', 'Paid', '0', '200', '200', '0', NULL, NULL, NULL, NULL, 0, NULL),
-(2020, '260504586848254', 7, 148, 250, 3, 750, NULL, 'Musa Abdullahi', '2026-05-05', '12:54:21', 'hamxah4u@gmail.com', 'Paid', '0', '3000', '700', '51', NULL, NULL, NULL, NULL, 0, NULL),
-(2021, '260504586848254', 7, 149, 3001, 1, 3001, NULL, 'Musa Abdullahi', '2026-05-05', '12:54:44', 'hamxah4u@gmail.com', 'Paid', '0', '3000', '700', '51', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO `transaction_tbl` (`TID`, `tCode`, `tDepartment`, `Product`, `Price`, `qty`, `unit_type`, `Amount`, `Credit`, `Customer`, `TransacDate`, `TransacTime`, `TrasacBy`, `Status`, `nhisno`, `cash`, `transfer`, `pos`, `crypto`, `CID`, `narration`, `creditstatus`, `pprice`, `pcs_per_unit_v`, `credit_returning_date`) VALUES
+(2231, '260901948220362', 7, 164, 10000, 24, '1', 10000, NULL, 'jkh', '2026-09-01', '16:51:54', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000, 24, NULL),
+(2256, '260901979254932', 7, 164, 450, 1, '4', 450, NULL, 'jjj', '2026-09-01', '18:04:37', 'hamxah4u@gmail.com', 'Paid', '', '450', '0', '0', NULL, NULL, NULL, NULL, 8000, 24, NULL),
+(2342, '260905621649113', 7, 164, 450, 2, '4', 900, NULL, 'Maryam Abdullahi', '2026-09-05', '22:59:15', 'hamxah4u@gmail.com', 'Paid', '', '900', '0', '0', NULL, NULL, NULL, NULL, 8000, 24, NULL),
+(2344, '260906199237025', 7, 165, 155, 10, '2', 155, NULL, 'Musa Abdullahi', '2026-09-05', '23:19:06', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 200, 20, NULL),
+(2346, '260906470521185', 7, 165, 36, 2, '4', 72, NULL, 'nn', '2026-09-05', '23:24:51', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 200, 20, NULL),
+(2348, '260906253581072', 7, 165, 36, 1, '4', 36, NULL, 'Musa Abdullahi', '2026-09-05', '23:35:59', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 200, 20, NULL),
+(2349, '260906547944446', 7, 165, 36, 1, '4', 36, NULL, 'Musa Abdullahi', '2026-09-06', '00:05:03', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 200, 20, NULL),
+(2350, '260906374830668', 7, 165, 300, 1, '1', 300, NULL, 'kdjk', '2026-09-06', '00:12:58', 'hamxah4u@gmail.com', 'Paid', '', '300', '0', '0', NULL, NULL, NULL, NULL, 200, 20, NULL),
+(2351, '260906898735381', 7, 164, 10000, 24, '1', 10000, NULL, 'ee', '2026-09-06', '01:04:44', 'hamxah4u@gmail.com', 'Not-Paid', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8000, 24, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `unit_types_tbl`
+--
+
+CREATE TABLE `unit_types_tbl` (
+  `id` int(11) NOT NULL,
+  `unit_key` varchar(20) NOT NULL,
+  `unit_label` varchar(50) NOT NULL,
+  `multiplier` decimal(10,4) NOT NULL,
+  `type_code` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `unit_types_tbl`
+--
+
+INSERT INTO `unit_types_tbl` (`id`, `unit_key`, `unit_label`, `multiplier`, `type_code`) VALUES
+(1, 'full', '1 Full (Carton/Roll)', 1.0000, 'ctn'),
+(2, 'half', '1/2 (Half Carton)', 0.5000, 'hlf'),
+(3, 'quarter', '1/4 (Quarter Carton)', 0.2500, 'qtr'),
+(4, 'pc', '1 Piece / Single Sachet', 1.0000, 'pcs');
 
 -- --------------------------------------------------------
 
@@ -523,19 +568,20 @@ CREATE TABLE `users_tbl` (
   `TimeRegister` time NOT NULL,
   `Role` varchar(10) NOT NULL,
   `Status` varchar(20) NOT NULL DEFAULT 'Active',
-  `Phone` varchar(20) NOT NULL
+  `Phone` varchar(20) NOT NULL,
+  `super_role` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users_tbl`
 --
 
-INSERT INTO `users_tbl` (`userID`, `Fullname`, `Email`, `UserPassword`, `Department`, `DateRegister`, `TimeRegister`, `Role`, `Status`, `Phone`) VALUES
-(11, 'Hamza Ibrahim Danasabe', 'hamxah4u@gmail.com', '$2y$10$rsAPBqxnifDbGLBhelhxwekKyJqdCP1uMTuYivZDjKVXKnpUyzYwm', 7, '0000-00-00', '00:00:00', 'Admin', 'Active', '12345'),
-(58, 'Rukayya Hassan Yalwa', 'hid@gmail.com', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '07048734630'),
-(59, 'Aliyu Saminu', 'hmx@gmail.com', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '08037856962'),
-(60, 'Rukayya Hassan Yalwa', 'hamzaibrahim382@gmail.com', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '070487346301'),
-(61, 'Hamza Ibrahim Danasabe', 'hhh@jsjs.cjj', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '1111');
+INSERT INTO `users_tbl` (`userID`, `Fullname`, `Email`, `UserPassword`, `Department`, `DateRegister`, `TimeRegister`, `Role`, `Status`, `Phone`, `super_role`) VALUES
+(11, 'Hamza Ibrahim Danasabe', 'hamxah4u@gmail.com', '$2y$10$rsAPBqxnifDbGLBhelhxwekKyJqdCP1uMTuYivZDjKVXKnpUyzYwm', 7, '0000-00-00', '00:00:00', 'Admin', 'Active', '12345', 'super admin'),
+(58, 'Rukayya Hassan Yalwa', 'hid@gmail.com', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '07048734630', NULL),
+(59, 'Shuaibu Tijjani', 'shuaibutijjani@gmail.com', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'Admin', 'Active', '08028289235', NULL),
+(60, 'Rukayya Hassan Yalwa', 'hamzaibrahim382@gmail.com', '$2y$10$rsAPBqxnifDbGLBhelhxwekKyJqdCP1uMTuYivZDjKVXKnpUyzYwm', 7, '0000-00-00', '00:00:00', 'User', 'Active', '070487346301', NULL),
+(61, 'Hamza Ibrahim Danasabe', 'hhh@jsjs.cjj', '$2y$10$ogkF97n2G.2ps1wep1gwRe/GP2MswNSZWZhFLoag68n5kstNFW1Ly', 7, '0000-00-00', '00:00:00', 'User', 'Active', '1111', NULL);
 
 -- --------------------------------------------------------
 
@@ -551,15 +597,6 @@ CREATE TABLE `wallet` (
   `reason` varchar(200) NOT NULL,
   `user_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `wallet`
---
-
-INSERT INTO `wallet` (`id`, `amount`, `datewithdraw`, `timewithdrawa`, `reason`, `user_id`) VALUES
-(24, 50, '2026-02-05', '22:13:56', '11', 11),
-(25, 250, '2026-02-05', '22:14:14', 'eee', 11),
-(26, 8000, '2026-04-30', '13:16:22', 'SARI', 11);
 
 --
 -- Indexes for dumped tables
@@ -597,6 +634,13 @@ ALTER TABLE `product_tbl`
   ADD KEY `Department` (`Department`);
 
 --
+-- Indexes for table `stock_reconciliation_logs`
+--
+ALTER TABLE `stock_reconciliation_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `SupplyID` (`SupplyID`);
+
+--
 -- Indexes for table `supply_tbl`
 --
 ALTER TABLE `supply_tbl`
@@ -616,6 +660,13 @@ ALTER TABLE `tikvaah_transaction`
 ALTER TABLE `transaction_tbl`
   ADD PRIMARY KEY (`TID`),
   ADD KEY `transaction_tbl_ibfk_1` (`tDepartment`);
+
+--
+-- Indexes for table `unit_types_tbl`
+--
+ALTER TABLE `unit_types_tbl`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unit_key` (`unit_key`);
 
 --
 -- Indexes for table `users_tbl`
@@ -665,10 +716,16 @@ ALTER TABLE `product_tbl`
   MODIFY `proID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
+-- AUTO_INCREMENT for table `stock_reconciliation_logs`
+--
+ALTER TABLE `stock_reconciliation_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
 -- AUTO_INCREMENT for table `supply_tbl`
 --
 ALTER TABLE `supply_tbl`
-  MODIFY `SupplyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `SupplyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT for table `tikvaah_transaction`
@@ -680,7 +737,13 @@ ALTER TABLE `tikvaah_transaction`
 -- AUTO_INCREMENT for table `transaction_tbl`
 --
 ALTER TABLE `transaction_tbl`
-  MODIFY `TID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2022;
+  MODIFY `TID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2352;
+
+--
+-- AUTO_INCREMENT for table `unit_types_tbl`
+--
+ALTER TABLE `unit_types_tbl`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `users_tbl`
@@ -692,7 +755,7 @@ ALTER TABLE `users_tbl`
 -- AUTO_INCREMENT for table `wallet`
 --
 ALTER TABLE `wallet`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- Constraints for dumped tables
@@ -703,6 +766,12 @@ ALTER TABLE `wallet`
 --
 ALTER TABLE `product_tbl`
   ADD CONSTRAINT `product_tbl_ibfk_1` FOREIGN KEY (`Department`) REFERENCES `department_tbl` (`deptID`);
+
+--
+-- Constraints for table `stock_reconciliation_logs`
+--
+ALTER TABLE `stock_reconciliation_logs`
+  ADD CONSTRAINT `fk_audit_supply` FOREIGN KEY (`SupplyID`) REFERENCES `supply_tbl` (`SupplyID`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `supply_tbl`
