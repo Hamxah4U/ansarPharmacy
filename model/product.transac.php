@@ -74,7 +74,7 @@
 
       // Validate Available Stock in Pieces
       if ($qtyInPcs > $row['Quantity']) {
-          $errors['outofStock'] = 'Insufficient stock! Only ' . $row['Quantity'] . ' pieces remaining.';//'Requested quantity exceeds stock! Available pieces: ' . $row['Quantity'];
+          $errors['outofStock'] = 'Insufficient stock'; //! Only ' . $row['Quantity'] . ' pieces remaining.';
       }
     }
 
