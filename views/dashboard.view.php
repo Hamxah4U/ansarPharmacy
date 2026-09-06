@@ -222,7 +222,11 @@
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Earnings (Daily)</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                             <?php
-                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`))  AS `dailyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" AND DATE(`TransacDate`) = CURRENT_DATE');
+                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `dailyTotal` 
+                                                    FROM `transaction_tbl` 
+                                                    WHERE (`Status` = "Paid" OR `Status` = "Returned") 
+                                                    AND `TransacDate` = CURDATE()');
+                                                $daily = $stmt->fetch(PDO::FETCH_ASSOC);
                                                 $daily = $stmt->fetch(PDO::FETCH_ASSOC);
                                                 $amount = $daily['dailyTotal'] ?? '0';
                                                 echo number_format($amount, 2, '.', ',');
@@ -246,7 +250,7 @@
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Earnings (Monthly)</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                             <?php
-                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `monthlyTotal` FROM `transaction_tbl`WHERE `Status` = "Paid" OR `Status` = "Returned" AND MONTH(`TransacDate`) = MONTH(CURRENT_DATE) AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
+                                                $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `monthlyTotal` FROM `transaction_tbl` WHERE (`Status` = "Paid" OR `Status` = "Returned") AND MONTH(`TransacDate`) = MONTH(CURDATE()) AND YEAR(`TransacDate`) = YEAR(CURDATE())');
                                                 $monthly = $stmt->fetch(PDO::FETCH_ASSOC);
                                                 echo number_format($monthly['monthlyTotal'], 2, '.', ',');
                                             ?>
@@ -271,7 +275,7 @@
                                                 <div class="col-auto">
                                                     <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
                                                     <?php
-                                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `yearlyTotal` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" AND YEAR(`TransacDate`) = YEAR(CURRENT_DATE)');
+                                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `yearlyTotal` FROM `transaction_tbl` WHERE (`Status` = "Paid" OR `Status` = "Returned") AND YEAR(`TransacDate`) = YEAR(CURDATE())');
                                                         $yearlyTotal = $stmt->fetch(PDO::FETCH_ASSOC);
                                                         echo number_format($yearlyTotal['yearlyTotal'], 2, '.', ',');
                                                     ?>
@@ -296,7 +300,7 @@
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total</div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">
                                     <?php
-                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `totalTransaction` FROM `transaction_tbl` WHERE `Status` = "Paid" OR `Status` = "Returned" ');
+                                        $stmt = $db->query('SELECT COALESCE(SUM(`Amount`), 0) AS `totalTransaction` FROM `transaction_tbl` WHERE `Status` IN ("Paid", "Returned")');
                                         $total = $stmt->fetch(PDO::FETCH_ASSOC);
                                         echo number_format($total['totalTransaction'], '2', '.', ',');
                                     ?>
