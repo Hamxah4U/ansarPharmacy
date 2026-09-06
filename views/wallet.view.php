@@ -151,6 +151,7 @@
 
 	$(document).ready(function(){
 		$('#usersTable').DataTable({
+            pageLength: 100,
 			ajax:{
 				url: 'model/wallet.table.php',
 				dataSrc: '',
