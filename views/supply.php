@@ -207,23 +207,28 @@
 			{ "data": "Price"},
 			{ "data": "wholesaleprice"},
 
-			{ 
-        "data": null,
-        "render": function (data, type, row) {
-          let pcs = parseFloat(row.pcs_per_unit) || 1;
-          let qty = parseFloat(row.Quantity) || 0;
-          return (qty / pcs).toFixed(); // Formats to 2 decimal places
-        }
-      },
+			// { 
+      //   "data": null,
+      //   "render": function (data, type, row) {
+      //     let pcs = parseFloat(row.pcs_per_unit) || 1;
+      //     let qty = parseFloat(row.Quantity) || 0;
+      //     return (qty / pcs).toFixed(2); // Formats to 2 decimal places
+      //   }
+      // },
+
+			{
+				"data": "formatted_stock"
+			},
+
 
 			{ 
         "data": null,
         "render": function (data, type, row) {
           let pcs = parseFloat(row.pcs_per_unit) || 1;
           let supplyQty = parseFloat(row.supplyqty) || 0;
-          return (supplyQty / pcs).toFixed(); // Formats to 2 decimal places
+          return (supplyQty / pcs).toFixed() + " ctn"; // Formats to 2 decimal places
         }
-      },
+      }, 
 			
 			{ 
 				"data": null,
