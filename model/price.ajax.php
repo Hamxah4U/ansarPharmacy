@@ -4,7 +4,8 @@ if (isset($_POST['product_id'])) {
 
     $productID = $_POST['product_id'];
 
-    $stmt = $db->conn->prepare("SELECT pcs_per_unit, Price, half_price, quarter_price, pc_price, Quantity, Pprice, wholesaleprice FROM supply_tbl WHERE SupplyID = :productID LIMIT 1");
+    $stmt = $db->conn->prepare("SELECT pcs_per_unit, Price, half_price, quarter_price, pc_price, Quantity, Pprice, wholesaleprice
+      FROM supply_tbl WHERE SupplyID = :productID LIMIT 1");
     $stmt->execute(['productID' => $productID]);
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -33,7 +34,7 @@ if (isset($_POST['product_id'])) {
             'purchaprice'    => $product['Pprice'],
             'wholesaleprice' => $wholesaleVal,
             'quantity'       => $current_qty,
-            'price'          => $wholesaleVal
+            'price'          => $wholesaleVal,
         ]);
     } else {
         echo json_encode(['status' => false]);

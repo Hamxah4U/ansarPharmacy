@@ -133,8 +133,8 @@
             </div>
 
             <div class="form-group col-md-3">
-              <label><strong>Stock Qty:</strong></label>
-              <input type="number" id="stockQty" class="form-control" readonly>
+              <label><strong>Stock Available:</strong></label>
+              <input type="text" id="stockQty" class="form-control" readonly placeholder="">
             </div>
 
             <div class="form-group col-md-3">
@@ -179,190 +179,216 @@
 <?php require 'partials/footer.php'; ?>
 
 <style>
-.transaction-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
+  .transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
 
-.transaction-table th,
-.transaction-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
+  .transaction-table th,
+  .transaction-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
 
-.transaction-table th {
-  background-color: #f2f2f2;
-}
+  .transaction-table th {
+    background-color: #f2f2f2;
+  }
 
-.delete-btn {
-  color: white;
-  background-color: #dc3545;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-}
+  .delete-btn {
+    color: white;
+    background-color: #dc3545;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
 
-.delete-btn:hover {
-  background-color: #c82333;
-}
+  .delete-btn:hover {
+    background-color: #c82333;
+  }
 </style>
 
 <script>
-$(document).ready(function() {
-  // 1. Initialize Select2 on both elements cleanly
-  $('#storeSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true
-  });
+  function formatStockDisplay(stockPcs, pcsPerUnit) {
+    const totalPcs = parseInt(stockPcs) || 0;
+    const unitSize = parseInt(pcsPerUnit) || 1;
 
-  $('#productSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true
-  });
-
-  // Initialize table
-  refreshTransactionTable();
-
-  // Load products when store changes
-  $('#storeSelect').on('change', function() {
-    const deptID = $(this).val();
-    if (deptID !== "--choose--" && deptID !== "" && deptID !== null) {
-      $.ajax({
-        url: "model/product.ajax.php",
-        type: "POST",
-        data: {
-          department_id: deptID
-        },
-        success: function(response) {
-          $("#productSelect").html(response).trigger('change');
-        }
-      });
-    } else {
-      $("#productSelect").html('<option value="">--choose--</option>').trigger('change');
+    if (unitSize <= 1) {
+      return totalPcs + ' Pcs';
     }
-    resetProductFields();
-  });
 
-  // Load product details when product is selected
+    const cartons = Math.floor(totalPcs / unitSize);
+    const remainingPcs = totalPcs % unitSize;
 
-  // Global variable to hold current active product's price tiers
-
-  // Variable to keep product prices cached in memory
-var activeProductPrices = null;
-
-// Independent helper function to update price based on selected unit
-function updateUnitPrice() {
-  if (!activeProductPrices) return;
-
-  var unitType = $('#unitTypeSelect').val(); // Returns ID string like "1", "2", etc.
-  var priceToSet = activeProductPrices.retail_price;
-
-  // Replace '2', '3', '4' with the actual IDs from your unit_types_tbl database table
-  if (unitType == '2' || unitType === 'half') {
-    priceToSet = activeProductPrices.half_price;
-  } else if (unitType == '3' || unitType === 'quarter') {
-    priceToSet = activeProductPrices.quarter_price;
-  } else if (unitType == '4' || unitType === 'pc') {
-    priceToSet = activeProductPrices.pc_price;
+    if (cartons > 0 && remainingPcs > 0) {
+      return cartons + ' ctn, ' + remainingPcs + ' pcs '; //  (' + totalPcs + ' Pcs total)';
+    } else if (cartons > 0) {
+      return cartons + ' ctn ' ;//(' + totalPcs + ' Pcs total)';
+    } else {
+      return remainingPcs + ' pcs';
+    }
   }
 
-  // Fallback if price value is missing/null from response
-  priceToSet = priceToSet || activeProductPrices.retail_price;
+  $(document).ready(function() {
+    // 1. Initialize Select2 on both elements cleanly
+    $('#storeSelect').select2({
+      theme: 'bootstrap-4',
+      placeholder: '--choose--',
+      allowClear: true
+    });
 
-  $("#price").val(parseFloat(priceToSet).toFixed());
-}
+    $('#productSelect').select2({
+      theme: 'bootstrap-4',
+      placeholder: '--choose--',
+      allowClear: true
+    });
 
-$(document).ready(function() {
-  // 1. Initialize Select2 on inputs
-  $('#storeSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true
-  });
+    // Initialize table
+    refreshTransactionTable();
 
-  $('#productSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true
-  });
-
-  $('#unitTypeSelect').select2({
-    theme: 'bootstrap-4',
-    placeholder: '--choose--',
-    allowClear: true
-  });
-
-  // 2. Refresh Table
-  refreshTransactionTable();
-
-  // 3. Store change handler
-  $('#storeSelect').on('change', function() {
-    const deptID = $(this).val();
-    if (deptID !== "--choose--" && deptID !== "" && deptID !== null) {
-      $.ajax({
-        url: "model/product.ajax.php",
-        type: "POST",
-        data: { department_id: deptID },
-        success: function(response) {
-          $("#productSelect").html(response).trigger('change');
-        }
-      });
-    } else {
-      $("#productSelect").html('<option value="">--choose--</option>').trigger('change');
-    }
-    resetProductFields();
-  });
-
-  // 4. Unit Type change handler (Catches both standard select & Select2 events)
-  $(document).on('change', '#unitTypeSelect', function() {
-    updateUnitPrice();
-  });
-
-  // 5. Product change handler
-  $('#productSelect').on('change', function() {
-    const productID = $(this).val();
-    if (productID !== "" && productID !== "--select product--" && productID !== null) {
-      $.ajax({
-        url: "model/price.ajax.php",
-        type: "POST",
-        data: {
-          product_id: productID,
-          department_id: $('#storeSelect').val()
-        },
-        dataType: 'json',
-        success: function(response) {
-          if (response.status || response.retail_price !== undefined) {
-            // Save pricing breakdown globally
-            activeProductPrices = response;
-
-            // Reset unit selection to 'full'
-            $('#unitTypeSelect').val('full').trigger('change.select2');
-
-            // Fill stock & purchase details
-            $("#stockQty").val(response.quantity);
-            $('#purchaseprice').val(response.purchaprice);
-
-            // Compute initial price
-            updateUnitPrice();
+    // Load products when store changes
+    $('#storeSelect').on('change', function() {
+      const deptID = $(this).val();
+      if (deptID !== "--choose--" && deptID !== "" && deptID !== null) {
+        $.ajax({
+          url: "model/product.ajax.php",
+          type: "POST",
+          data: {
+            department_id: deptID
+          },
+          success: function(response) {
+            $("#productSelect").html(response).trigger('change');
           }
-        },
-        error: function() {
-          activeProductPrices = null;
-          resetProductFields();
-        }
-      });
-    } else {
-      activeProductPrices = null;
+        });
+      } else {
+        $("#productSelect").html('<option value="">--choose--</option>').trigger('change');
+      }
       resetProductFields();
-    }
-  });
+    });
 
-});
+    // Load product details when product is selected
+
+    // Global variable to hold current active product's price tiers
+
+    // Variable to keep product prices cached in memory
+  var activeProductPrices = null;
+
+  // Independent helper function to update price based on selected unit
+  function updateUnitPrice() {
+    if (!activeProductPrices) return;
+
+    var unitType = $('#unitTypeSelect').val(); // Returns ID string like "1", "2", etc.
+    var priceToSet = activeProductPrices.retail_price;
+
+    // Replace '2', '3', '4' with the actual IDs from your unit_types_tbl database table
+    if (unitType == '2' || unitType === 'half') {
+      priceToSet = activeProductPrices.half_price;
+    } else if (unitType == '3' || unitType === 'quarter') {
+      priceToSet = activeProductPrices.quarter_price;
+    } else if (unitType == '4' || unitType === 'pc') {
+      priceToSet = activeProductPrices.pc_price;
+    }
+
+    // Fallback if price value is missing/null from response
+    priceToSet = priceToSet || activeProductPrices.retail_price;
+
+    $("#price").val(parseFloat(priceToSet).toFixed());
+  }
+
+  $(document).ready(function() {
+    // 1. Initialize Select2 on inputs
+    $('#storeSelect').select2({
+      theme: 'bootstrap-4',
+      placeholder: '--choose--',
+      allowClear: true
+    });
+
+    $('#productSelect').select2({
+      theme: 'bootstrap-4',
+      placeholder: '--choose--',
+      allowClear: true
+    });
+
+    $('#unitTypeSelect').select2({
+      theme: 'bootstrap-4',
+      placeholder: '--choose--',
+      allowClear: true
+    });
+
+    // 2. Refresh Table
+    refreshTransactionTable();
+
+    // 3. Store change handler
+    $('#storeSelect').on('change', function() {
+      const deptID = $(this).val();
+      if (deptID !== "--choose--" && deptID !== "" && deptID !== null) {
+        $.ajax({
+          url: "model/product.ajax.php",
+          type: "POST",
+          data: { department_id: deptID },
+          success: function(response) {
+            $("#productSelect").html(response).trigger('change');
+          }
+        });
+      } else {
+        $("#productSelect").html('<option value="">--choose--</option>').trigger('change');
+      }
+      resetProductFields();
+    });
+
+    // 4. Unit Type change handler (Catches both standard select & Select2 events)
+    $(document).on('change', '#unitTypeSelect', function() {
+      updateUnitPrice();
+    });
+
+    // 5. Product change handler
+    $('#productSelect').on('change', function() {
+      const productID = $(this).val();
+      if (productID !== "" && productID !== "--select product--" && productID !== null) {
+        $.ajax({
+          url: "model/price.ajax.php",
+          type: "POST",
+          data: {
+            product_id: productID,
+            department_id: $('#storeSelect').val()
+          },
+          dataType: 'json',
+          success: function(response) {
+            if (response.status || response.retail_price !== undefined) {
+              // Save pricing breakdown globally
+              activeProductPrices = response;
+
+              // Reset unit selection to 'full'
+              $('#unitTypeSelect').val('full').trigger('change.select2');
+
+              const displayStock = formatStockDisplay(response.stock_pcs, response.pcs_per_unit);
+              $("#stockQty").val(displayStock);
+              $("#stockQty").data('raw-pcs', response.stock_pcs);
+              $('#purchaseprice').val(response.purchaprice);
+              updateUnitPrice();
+
+              /* // Fill stock & purchase details
+              $("#stockQty").val(response.quantity);
+              $('#purchaseprice').val(response.purchaprice);
+
+              // Compute initial price
+              updateUnitPrice(); */
+            }
+          },
+          error: function() {
+            activeProductPrices = null;
+            resetProductFields();
+          }
+        });
+      } else {
+        activeProductPrices = null;
+        resetProductFields();
+      }
+    });
+
+  });
 
   /* let activeProductPrices = null;
 
@@ -427,33 +453,6 @@ $(document).ready(function() {
       resetProductFields();
     }
   });
-
-
-  /* $('#productSelect').on('change', function() {
-    const productID = $(this).val();
-    if (productID !== "" && productID !== "--select product--" && productID !== null) {
-      $.ajax({
-        url: "model/price.ajax.php",
-        type: "POST",
-        data: {
-          product_id: productID,
-          department_id: $('#storeSelect').val()
-        },
-        dataType: 'json',
-        success: function(response) {
-          $("#price").val(response.price);
-          $("#stockQty").val(response.quantity);
-          $('#purchaseprice').val(response.purchaprice);
-        },
-        error: function() {
-          $("#price").val('');
-          $("#stockQty").val('');
-        }
-      });
-    } else {
-      resetProductFields();
-    }
-  }); */
 }); // <--- END OF DOCUMENT READY FOR INITIALIZATION
 
 // MOVE ALL GLOBAL FUNCTIONS OUTSIDE SO THE BUTTONS CAN SEE THEM
@@ -497,7 +496,7 @@ function addProductToTable() {
     $('#errorService').text('');
   }
 
-  if (!issuedQty || issuedQty <= 0) {
+  /* if (!issuedQty || issuedQty <= 0) {
     $('#errorQty').text('Valid quantity is required!');
     hasError = true;
   } else if (parseInt(issuedQty) > parseInt(stockQty)) {
@@ -505,7 +504,7 @@ function addProductToTable() {
     hasError = true;
   } else {
     $('#errorQty').text('');
-  }
+  } */
 
   if (hasError) return;
 
@@ -546,8 +545,8 @@ function addProductToTable() {
     }
   });
   
-}
-
+} 
+ 
 function refreshTransactionTable() {
   const tCode = $('input[name="tcode"]').val();
   const customerName = $('#customerName').val();
@@ -592,28 +591,6 @@ function refreshTransactionTable() {
     }
   });
 }
-
-/* function refreshTransactionTable() {
-  const tCode = $('input[name="tcode"]').val();
-  const customerName = $('#customerName').val();
-  const department = $('#storeSelect').val();
-
-  $.ajax({
-    url: 'model/fetchTransactions.table2.php',
-    method: 'POST',
-    data: {
-      tcode: tCode,
-      customername: customerName,
-      department: department
-    },
-    success: function(data) {
-      $('.transaction_table').html(data);
-      if ($('.transaction-table tbody tr').length > 0) {
-        $('#actionButtons').show();
-      }
-    }
-  });
-} */
  
 function deleteProduct(transactionID) {
   if (confirm('Are you sure you want to delete this item?')) {
@@ -746,114 +723,6 @@ function validateTransaction() {
   });
 }
 
-/* function validateTransaction() {
-  const tCode = $('input[name="tcode"]').val();
-
-  Swal.fire({
-    title: "Payment Method",
-    html: `
-              <small id="totalamounterror" class="text-danger"></small>
-              <div class="form-group">
-                  <label>Cash (₦):</label>
-                  <input id="cashInput" type="number" class="form-control" placeholder="0">
-              </div>
-              <div class="form-group">
-                  <label>Transfer (₦):</label>
-                  <input id="transferInput" type="number" class="form-control" placeholder="0">
-              </div>
-              <div class="form-group">
-                  <label>POS (₦):</label>
-                  <input id="posInput" type="number" class="form-control" placeholder="0" value="0">
-              </div>
-              <div class="form-group">
-                  <label>Total Amount to Pay:</label>
-                  <input id="totalAmount" type="text" class="form-control" readonly>
-              </div>
-          `,
-    showCancelButton: true,
-    confirmButtonText: "Validate",
-    cancelButtonText: "Cancel",
-    preConfirm: () => {
-      const cash = parseFloat(document.getElementById("cashInput").value) || 0;
-      const transfer = parseFloat(document.getElementById("transferInput").value) || 0;
-      const pos = parseFloat(document.getElementById("posInput").value) || 0;
-      const totalPaid = cash + transfer + pos;
-      const displayValue = document.getElementById("totalAmount").value;
-      const expectedTotal = parseFloat(displayValue.replace(/[₦,]/g, '')) || 0;
-
-      if (Math.round(totalPaid) !== Math.round(expectedTotal)) {
-        Swal.showValidationMessage(
-          `Total paid: ₦${totalPaid.toLocaleString()} | Expected: ₦${expectedTotal.toLocaleString()}`);
-        return false;
-      }
-      return {
-        cash: cash,
-        transfer: transfer,
-        pos: pos
-      };
-    },
-    didOpen: () => {
-      $.ajax({
-        url: 'model/getTransactionTotal2.php',
-        method: 'POST',
-        data: {
-          tcode: tCode
-        },
-        dataType: 'json',
-        success: function(response) {
-          if (response.status) {
-            const num = parseFloat(response.total);
-            const formatted = num.toLocaleString(undefined, {
-              minimumFractionDigits: 2
-            });
-            $('#totalAmount').val('₦' + formatted);
-          }
-        }
-      });
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      $.ajax({
-        url: 'model/validateTransaction.php',
-        method: 'POST',
-        data: {
-          tCode: tCode,
-          cash: result.value.cash,
-          transfer: result.value.transfer,
-          pos: result.value.pos
-        },
-        dataType: 'json',
-        success: function(response) {
-          if (response.status) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Success!',
-              text: response.message,
-              timer: 1500,
-              showConfirmButton: false
-            });
-            refreshTransactionTable();
-            $('#actionButtons').show();
-            $('#btnValidate').hide();
-            $('#btnPrint').show();
-            setTimeout(() => {
-              if (typeof PrintDoc2 === 'function') PrintDoc2();
-            }, 1500);
-          } else {
-            Swal.fire({
-              icon: 'error',
-              title: 'Failed',
-              text: response.message
-            });
-          }
-        },
-        error: function() {
-          toastr.error('Connection error. Please try again.');
-        }
-      });
-    }
-  });
-} */
 </script>
 
 
